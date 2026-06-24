@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { FormEvent, useState } from "react";
+import { DeleteAccountSection } from "@/components/delete-account-section";
 import { useUIStore } from "@/store/ui-store";
 
 export default function ProfilePage() {
@@ -89,6 +90,9 @@ export default function ProfilePage() {
             저장
           </button>
         </form>
+
+        <div className="divider my-2" />
+        <DeleteAccountSection />
       </div>
     </div>
   );

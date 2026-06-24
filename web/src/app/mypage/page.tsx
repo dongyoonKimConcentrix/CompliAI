@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Icon } from "@/components/icon";
+import { DeleteAccountSection } from "@/components/delete-account-section";
 
 export default function MyPage() {
   const { data, isLoading } = useQuery({
@@ -65,6 +66,8 @@ export default function MyPage() {
           </div>
         )}
       </section>
+
+      <DeleteAccountSection />
     </div>
   );
 }
