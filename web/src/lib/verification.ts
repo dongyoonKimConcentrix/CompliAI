@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import { getAppBaseUrl } from "@/lib/app-url";
 import { sendVerificationEmail, isSmtpConfigured } from "@/lib/mail";
 
 const TOKEN_EXPIRY_MS = 24 * 60 * 60 * 1000;
@@ -8,8 +9,7 @@ export function createVerificationToken(): string {
 }
 
 export function getVerifyUrl(token: string): string {
-  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-  return `${baseUrl}/api/auth/verify?token=${token}`;
+  return `${getAppBaseUrl()}/api/auth/verify?token=${token}`;
 }
 
 export type SendVerificationResult = {

@@ -1,3 +1,4 @@
+import { getAppBaseUrl } from "@/lib/app-url";
 import type { LeaderboardEntry } from "@/lib/praise-policy";
 import { getKSTNow } from "@/lib/praise-policy";
 import { getMonthlyRanking } from "@/lib/rankings";
@@ -71,7 +72,7 @@ export async function runMonthlyWinnerEmailJob(
 
   if (winners.length === 0) {
     if (testEmail) {
-      const appUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+      const appUrl = getAppBaseUrl();
       await sendMonthlyWinnerAnnouncement({
         to: testEmail,
         nickname: "테스트",
@@ -166,7 +167,7 @@ export async function runMonthlyWinnerEmailJob(
     };
   }
 
-  const appUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const appUrl = getAppBaseUrl();
   const winnerNames = winners.map((w) => w.name || w.nickname).join(", ");
 
   for (const recipient of recipients) {

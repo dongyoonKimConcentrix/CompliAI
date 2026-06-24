@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { appUrl } from "@/lib/app-url";
 import { prisma } from "@/lib/prisma";
 import { isTokenExpired } from "@/lib/verification";
 
@@ -7,17 +8,17 @@ export async function GET(request: Request) {
   const token = searchParams.get("token");
 
   if (!token) {
-    return NextResponse.redirect(new URL("/login?error=invalid_token", request.url));
+    return NextResponse.redirect(appUrl("/login?error=invalid_token", request));
   }
 
   const user = await prisma.user.findUnique({ where: { verificationToken: token } });
 
   if (!user) {
-    return NextResponse.redirect(new URL("/login?error=invalid_token", request.url));
+    return NextResponse.redirect(appUrl("/login?error=invalid_token", request));
   }
 
-  if (isTokenExpired(user.updatedAt)) {
-    return NextResponse.redirect(new URL("/login?error=expired_token", request.url));
+  if (isTokenExpired(user.createdAt)) {
+    return NextResponse.redirect(appUrl("/login?error=expired_token", request));
   }
 
   await prisma.user.update({
@@ -28,5 +29,5 @@ export async function GET(request: Request) {
     },
   });
 
-  return NextResponse.redirect(new URL("/login?verified=1", request.url));
+  return NextResponse.redirect(appUrl("/login?verified=1", request));
 }
