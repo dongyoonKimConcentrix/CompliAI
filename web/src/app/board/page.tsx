@@ -1,0 +1,100 @@
+"use client";
+
+import { useInfiniteQuery } from "@tanstack/react-query";
+import Link from "next/link";
+import { useState } from "react";
+import { PostCard } from "@/components/post-card";
+import { Icon } from "@/components/icon";
+
+type Post = {
+  id: string;
+  title: string;
+  content: string;
+  targetName: string;
+  isBlinded: boolean;
+  sarcasmScore: number;
+  createdAt: string;
+  author: { nickname: string; email: string };
+  _count: { likes: number; comments: number };
+};
+
+async function fetchPosts({ pageParam, query }: { pageParam?: string; query: string }) {
+  const params = new URLSearchParams();
+  if (pageParam) params.set("cursor", pageParam);
+  if (query) params.set("q", query);
+  const res = await fetch(`/api/posts?${params}`);
+  if (!res.ok) throw new Error("목록 조회 실패");
+  return res.json() as Promise<{ posts: Post[]; nextCursor: string | null }>;
+}
+
+export default function BoardPage() {
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
+
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useInfiniteQuery({
+    queryKey: ["posts", query],
+    queryFn: ({ pageParam }) => fetchPosts({ pageParam, query }),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
+  });
+
+  const posts = data?.pages.flatMap((p) => p.posts) ?? [];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+        <h1 className="text-3xl font-bold">칭찬 게시판</h1>
+        <form
+          className="join w-full sm:w-auto"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setQuery(search);
+          }}
+        >
+          <input
+            className="input input-bordered join-item w-full sm:w-64"
+            placeholder="제목, 본문, 대상 검색..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+          <button type="submit" className="btn btn-primary join-item gap-2">
+            <Icon name="fa-solid fa-magnifying-glass" />
+            검색
+          </button>
+        </form>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <span className="loading loading-spinner loading-lg" />
+        </div>
+      ) : posts.length === 0 ? (
+        <div className="alert alert-neutral">
+          <span>아직 칭찬 글이 없습니다. 첫 번째 칭찬을 남겨 보세요!</span>
+        </div>
+      ) : (
+        <div className="grid gap-4">
+          {posts.map((post) => (
+            <PostCard key={post.id} post={post} />
+          ))}
+        </div>
+      )}
+
+      {hasNextPage && (
+        <div className="text-center">
+          <button
+            className="btn btn-outline"
+            onClick={() => fetchNextPage()}
+            disabled={isFetchingNextPage}
+          >
+            {isFetchingNextPage ? (
+              <span className="loading loading-spinner" />
+            ) : (
+              "더 보기"
+            )}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

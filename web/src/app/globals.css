@@ -1,0 +1,106 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@font-face {
+  font-family: "GMarketSans";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansLight.woff")
+    format("woff");
+  font-weight: 300;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "GMarketSans";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansMedium.woff")
+    format("woff");
+  font-weight: 500;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "GMarketSans";
+  src: url("https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_2001@1.1/GmarketSansBold.woff")
+    format("woff");
+  font-weight: 700;
+  font-display: swap;
+}
+
+body {
+  min-height: 100vh;
+  font-family: "GMarketSans", -apple-system, BlinkMacSystemFont, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.badge {
+  height: auto;
+  min-height: 1.25rem;
+  padding: 0.35rem 0.75rem;
+  line-height: 1.25;
+  font-weight: 500;
+}
+
+.badge-sm {
+  height: auto;
+  min-height: 1rem;
+  padding: 0.25rem 0.625rem;
+  line-height: 1.25;
+}
+
+.card {
+  border: 1px solid oklch(var(--b3) / 0.6);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+.navbar {
+  border-bottom: 1px solid oklch(var(--b3) / 0.6);
+  box-shadow: none;
+}
+
+.btn-primary {
+  font-weight: 500;
+}
+
+.input,
+.textarea,
+.select {
+  background-color: oklch(var(--b1));
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: oklch(var(--bc) / 0.4);
+  box-shadow: 0 0 0 3px oklch(var(--bc) / 0.08);
+}
+
+.badge-neutral {
+  background-color: oklch(var(--b2));
+  color: oklch(var(--bc));
+  border-color: oklch(var(--b3));
+}
+
+.badge-score-low {
+  background-color: oklch(var(--b2));
+  color: oklch(var(--bc) / 0.7);
+  border-color: oklch(var(--b3));
+}
+
+.badge-score-mid {
+  background-color: oklch(var(--b3));
+  color: oklch(var(--bc));
+  border-color: oklch(var(--bc) / 0.2);
+}
+
+.badge-score-high {
+  background-color: oklch(var(--bc));
+  color: oklch(var(--b1));
+  border-color: oklch(var(--bc));
+}
+
+.alert-neutral {
+  background-color: oklch(var(--b2));
+  color: oklch(var(--bc));
+  border: 1px solid oklch(var(--b3));
+}

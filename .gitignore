@@ -1,0 +1,48 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# testing
+coverage/
+
+# next.js
+web/.next/
+web/out/
+
+# production
+build/
+dist/
+
+# misc
+.DS_Store
+*.pem
+*.tsbuildinfo
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# env
+.env
+.env.local
+.env.*.local
+
+# prisma
+web/prisma/*.db
+
+# python
+api/__pycache__/
+api/**/__pycache__/
+api/.venv/
+*.pyc
+.pytest_cache/
+
+# uploads
+web/public/uploads/*
+!web/public/uploads/.gitkeep
+
+# IDE
+.idea/
+.vscode/

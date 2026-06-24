@@ -1,0 +1,13 @@
+{
+  "name": "compliai",
+  "private": true,
+  "scripts": {
+    "dev:web": "cd web && npm run dev",
+    "dev:api": "cd api && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000",
+    "db:push": "cd web && npx prisma db push",
+    "docker:up": "docker compose up -d --build",
+    "docker:down": "docker compose down",
+    "docker:logs": "docker compose logs -f",
+    "deploy": "bash scripts/deploy.sh"
+  }
+}

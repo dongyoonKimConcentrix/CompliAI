@@ -1,0 +1,17 @@
+name: Monthly Winner Email
+
+on:
+  schedule:
+    # 매월 1일 00:00 UTC = KST 09:00
+    - cron: "0 0 1 * *"
+  workflow_dispatch:
+
+jobs:
+  send-monthly-winner:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger monthly winner email
+        run: |
+          curl -fsS -X POST "${{ secrets.NEXTAUTH_URL }}/api/cron/monthly-winner" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            -H "Content-Type: application/json"

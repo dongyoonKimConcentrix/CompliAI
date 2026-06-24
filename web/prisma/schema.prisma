@@ -1,0 +1,120 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum ModerationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  passwordHash      String
+  name              String    @default("")
+  nickname          String
+  role              UserRole  @default(USER)
+  profileImage      String?
+  emailVerified     DateTime?
+  verificationToken String?   @unique
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  posts    Post[]
+  comments Comment[]
+  likes    Like[]
+}
+
+model Post {
+  id                 String             @id @default(cuid())
+  title              String
+  content            String
+  targetName         String
+  fileUrl            String?
+  isBlinded          Boolean            @default(false)
+  sarcasmScore       Int                @default(0)
+  aggression         Boolean            @default(false)
+  aiReport           Json?
+  moderationStatus   ModerationStatus   @default(APPROVED)
+  adminReviewedAt    DateTime?
+  adminReviewedBy    String?
+  authorId           String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  comments Comment[]
+  likes    Like[]
+
+  @@index([title, content, targetName])
+  @@index([createdAt])
+  @@index([createdAt, sarcasmScore, aggression])
+  @@index([moderationStatus])
+}
+
+model Comment {
+  id                 String             @id @default(cuid())
+  content            String
+  isBlinded          Boolean            @default(false)
+  sarcasmScore       Int                @default(0)
+  aggression         Boolean            @default(false)
+  aiReport           Json?
+  moderationStatus   ModerationStatus   @default(APPROVED)
+  adminReviewedAt    DateTime?
+  adminReviewedBy    String?
+  postId             String
+  authorId           String
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([moderationStatus])
+}
+
+model Like {
+  id        String   @id @default(cuid())
+  postId    String
+  userId    String
+  createdAt DateTime @default(now())
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+}
+
+model AppSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+  updatedBy String?
+
+  @@map("app_settings")
+}
+
+model MonthlyAnnouncementLog {
+  id             String   @id @default(cuid())
+  year           Int
+  month          Int
+  sentAt         DateTime @default(now())
+  recipientCount Int      @default(0)
+  winnerNames    String   @default("")
+  triggeredBy    String   @default("cron")
+
+  @@unique([year, month])
+  @@map("monthly_announcement_logs")
+}
