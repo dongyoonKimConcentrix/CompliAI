@@ -9,7 +9,7 @@ export function createVerificationToken(): string {
 }
 
 export function getVerifyUrl(token: string): string {
-  return `${getAppBaseUrl()}/api/auth/verify?token=${token}`;
+  return `${getAppBaseUrl()}/verify-email?token=${encodeURIComponent(token)}`;
 }
 
 export type SendVerificationResult = {
@@ -46,6 +46,6 @@ export async function dispatchVerificationEmail(
   throw new Error("이메일 발송 설정이 없습니다. 관리자에게 문의해 주세요.");
 }
 
-export function isTokenExpired(createdAt: Date): boolean {
-  return Date.now() - createdAt.getTime() > TOKEN_EXPIRY_MS;
+export function isTokenExpired(issuedAt: Date): boolean {
+  return Date.now() - issuedAt.getTime() > TOKEN_EXPIRY_MS;
 }

@@ -21,7 +21,7 @@ export default function LoginForm() {
 
   const urlErrorMessage =
     urlError === "invalid_token"
-      ? "유효하지 않은 인증 링크입니다."
+      ? "유효하지 않거나 이미 사용된 인증 링크입니다. 로그인 화면에서 인증 메일을 다시 요청해 주세요."
       : urlError === "expired_token"
         ? "인증 링크가 만료되었습니다. 인증 메일을 다시 요청해 주세요."
         : "";
