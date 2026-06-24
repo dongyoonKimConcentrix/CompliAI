@@ -1,0 +1,62 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push web
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          push: true
+          tags: |
+            dongyoonkimconcentrix/compliai-web:latest
+            dongyoonkimconcentrix/compliai-web:${{ github.sha }}
+
+      - name: Build and push api
+        uses: docker/build-push-action@v6
+        with:
+          context: ./api
+          push: true
+          tags: |
+            dongyoonkimconcentrix/compliai-api:latest
+            dongyoonkimconcentrix/compliai-api:${{ github.sha }}
+
+      - name: Build and push migrate
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          target: builder
+          push: true
+          tags: |
+            dongyoonkimconcentrix/compliai-migrate:latest
+            dongyoonkimconcentrix/compliai-migrate:${{ github.sha }}
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to Oracle Cloud VM
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /opt/compliai
+            git pull origin main
+            bash scripts/deploy.sh

@@ -358,11 +358,50 @@ volumes:
   uploads_data:
 ```
 
-> 실제 설정은 프로젝트 루트 `docker-compose.yml`을 사용하세요. `npm run docker:up` 또는 `bash scripts/deploy.sh`로 실행합니다.
+> 실제 설정은 프로젝트 루트 `docker-compose.yml`을 사용하세요. **프로덕션 VM에서는 빌드하지 않고** Docker Hub 이미지를 pull 합니다.
+
+### CI/CD (GitHub Actions)
+
+| 워크플로 | 트리거 | 역할 |
+|---------|--------|------|
+| `ci.yml` | push/PR → `main` | Web 빌드·lint·typecheck, API import 검증 |
+| `deploy.yml` | push → `main` | GitHub에서 이미지 빌드·push → VM SSH 배포 |
+| `monthly-winner.yml` | 매월 1일 cron | 칭찬왕 메일 발송 |
+
+**Repository Secrets (Actions):**
+
+| Secret | 용도 |
+|--------|------|
+| `DOCKERHUB_USERNAME` | Docker Hub 로그인 |
+| `DOCKERHUB_TOKEN` | Docker Hub Access Token |
+| `SSH_HOST` | 오라클 VM 공인 IP |
+| `SSH_USER` | `ubuntu` |
+| `SSH_PRIVATE_KEY` | SSH `.key` 파일 전체 내용 |
+| `NEXTAUTH_URL` | `http://공인IP` (월간 메일 cron) |
+| `CRON_SECRET` | `.env`와 동일 |
+
+**배포 흐름:** `main` push → GitHub에서 `compliai-web/api/migrate` 이미지 빌드·push → VM에서 `git pull` + `scripts/deploy.sh` (pull만, 빌드 없음)
+
+**로컬에서 수동 빌드·push (Mac):**
+
+```bash
+export DOCKERHUB_USERNAME=your-username
+export DOCKERHUB_TOKEN=your-token
+npm run docker:build-push
+# VM에서: bash scripts/deploy.sh
+```
+
+**로컬 Docker 전체 빌드 테스트:**
+
+```bash
+npm run docker:up   # docker-compose.local.yml 포함
+```
 
 ### Oracle Cloud 배포 (단계별)
 
 **사전:** OCI VM (Ubuntu, 1 vCPU / 1GB RAM) 생성, Security List에서 **80**, **8000**, **22** 인바운드 허용.
+
+> **1GB VM에서는 이미지 빌드를 하지 마세요.** GitHub Actions 또는 Mac에서 빌드 후 Hub에 push합니다.
 
 #### 1) VM 초기 설정 (최초 1회)
 
@@ -398,10 +437,20 @@ CRON_SECRET=랜덤_시크릿
 
 > `DATABASE_URL` 호스트는 Docker 내부이므로 **`db`** 입니다.
 
-#### 3) Docker Compose 실행
+#### 3) 최초 배포 (이미지가 Hub에 있어야 함)
+
+**방법 A — GitHub Actions:** `main`에 push하면 `deploy.yml`이 자동 빌드·배포
+
+**방법 B — Mac에서 수동:**
 
 ```bash
-bash scripts/deploy.sh
+npm run docker:build-push   # Hub에 push
+```
+
+VM에서:
+
+```bash
+bash scripts/deploy.sh    # pull → prisma migrate → up
 ```
 
 - Web: `http://공인IP` (포트 80)
@@ -414,14 +463,9 @@ docker compose exec db psql -U myuser -d compliai_db \
   -c "UPDATE \"User\" SET role = 'ADMIN' WHERE email = 'your@email.com';"
 ```
 
-#### 5) GitHub Actions (월간 칭찬왕 메일)
+#### 5) 이후 업데이트
 
-| Secret | 값 |
-|--------|-----|
-| `NEXTAUTH_URL` | `http://공인IP` |
-| `CRON_SECRET` | `.env`와 동일 |
-
-#### 6) 업데이트
+`main` push 시 GitHub Actions가 자동 배포하거나, VM에서:
 
 ```bash
 cd /opt/compliai && git pull && bash scripts/deploy.sh

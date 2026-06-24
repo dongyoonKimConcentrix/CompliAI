@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# CompliAI Docker Compose 배포/업데이트
+# 오라클 VM 배포: Hub에서 이미지 pull → DB 스키마 반영 → 기동 (VM에서 빌드 안 함)
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -24,13 +24,23 @@ if [ -z "${NEXTAUTH_URL:-}" ] || [ "$NEXTAUTH_URL" = "http://localhost:3000" ]; 
   echo "경고: NEXTAUTH_URL이 로컬 주소입니다. 프로덕션에서는 http://공인IP 형태로 설정하세요."
 fi
 
-echo "==> Docker 이미지 빌드 및 컨테이너 시작"
-docker compose pull --ignore-buildable 2>/dev/null || true
-docker compose up -d --build
+COMPOSE="docker compose"
+if ! docker compose version >/dev/null 2>&1; then
+  COMPOSE="docker-compose"
+fi
+
+echo "==> Docker Hub에서 이미지 pull"
+$COMPOSE pull
+
+echo "==> Prisma 스키마 반영 (migrate)"
+$COMPOSE --profile migrate run --rm migrate
+
+echo "==> 컨테이너 시작"
+$COMPOSE up -d
 
 echo ""
 echo "==> 컨테이너 상태"
-docker compose ps
+$COMPOSE ps
 
 echo ""
 echo "==> 헬스 체크 (최대 60초 대기)"
@@ -45,7 +55,7 @@ done
 if curl -fsS "http://127.0.0.1:8000/health" >/dev/null 2>&1; then
   echo "API OK — http://127.0.0.1:8000/health"
 else
-  echo "API 헬스 체크 실패 — docker compose logs api 확인"
+  echo "API 헬스 체크 실패 — $COMPOSE logs api 확인"
 fi
 
 echo ""

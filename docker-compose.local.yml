@@ -1,0 +1,16 @@
+# 로컬에서 이미지를 직접 빌드할 때 사용
+# docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
+services:
+  migrate:
+    build:
+      context: ./web
+      target: builder
+    image: dongyoonkimconcentrix/compliai-migrate:latest
+
+  api:
+    build: ./api
+    image: dongyoonkimconcentrix/compliai-api:latest
+
+  web:
+    build: ./web
+    image: dongyoonkimconcentrix/compliai-web:latest
