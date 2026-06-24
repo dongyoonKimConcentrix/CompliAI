@@ -26,10 +26,13 @@ export async function dispatchVerificationEmail(
   const verifyUrl = getVerifyUrl(token);
 
   if (isSmtpConfigured()) {
-    await sendVerificationEmail(email, nickname, verifyUrl);
+    void sendVerificationEmail(email, nickname, verifyUrl).catch((err) => {
+      console.error("[CompliAI] 인증 메일 발송 실패:", email, err);
+    });
     return {
       sent: true,
-      message: "입력하신 이메일로 인증 링크를 발송했습니다. 메일함을 확인해 주세요.",
+      message:
+        "입력하신 이메일로 인증 링크를 발송 중입니다. 수신까지 1~2분 걸릴 수 있습니다.",
     };
   }
 

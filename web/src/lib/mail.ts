@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import type Transporter from "nodemailer/lib/mailer";
 
 type MailConfig = {
   host: string;
@@ -8,6 +9,9 @@ type MailConfig = {
   secure: boolean;
   from: string;
 };
+
+let cachedTransport: Transporter | null = null;
+let cachedConfigKey: string | null = null;
 
 export function getMailConfig(): MailConfig | null {
   const host = process.env.SMTP_HOST;
@@ -30,19 +34,33 @@ export function isSmtpConfigured(): boolean {
   return getMailConfig() !== null;
 }
 
-function createTransport() {
+function getTransportConfigKey(config: MailConfig): string {
+  return `${config.host}:${config.port}:${config.user}:${config.secure}`;
+}
+
+function getSharedTransport(): { transport: Transporter; config: MailConfig } | null {
   const config = getMailConfig();
   if (!config) return null;
 
-  return nodemailer.createTransport({
-    host: config.host,
-    port: config.port,
-    secure: config.secure,
-    auth: {
-      user: config.user,
-      pass: config.pass,
-    },
-  });
+  const key = getTransportConfigKey(config);
+  if (!cachedTransport || cachedConfigKey !== key) {
+    cachedTransport?.close();
+    cachedTransport = nodemailer.createTransport({
+      pool: true,
+      maxConnections: 1,
+      maxMessages: 100,
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: {
+        user: config.user,
+        pass: config.pass,
+      },
+    });
+    cachedConfigKey = key;
+  }
+
+  return { transport: cachedTransport, config };
 }
 
 export async function sendVerificationEmail(
@@ -50,12 +68,13 @@ export async function sendVerificationEmail(
   nickname: string,
   verifyUrl: string
 ): Promise<void> {
-  const config = getMailConfig();
-  const transport = createTransport();
+  const shared = getSharedTransport();
 
-  if (!config || !transport) {
+  if (!shared) {
     throw new Error("SMTP 설정이 없습니다.");
   }
+
+  const { transport, config } = shared;
 
   await transport.sendMail({
     from: `"CompliAI" <${config.from}>`,
@@ -142,13 +161,13 @@ function formatWinnersHtml(
 export async function sendMonthlyWinnerAnnouncement(
   payload: MonthlyWinnerMailPayload
 ): Promise<void> {
-  const config = getMailConfig();
-  const transport = createTransport();
+  const shared = getSharedTransport();
 
-  if (!config || !transport) {
+  if (!shared) {
     throw new Error("SMTP 설정이 없습니다.");
   }
 
+  const { transport, config } = shared;
   const { to, nickname, periodLabel, winners, rankingsUrl, isTest } = payload;
   const winnerText = formatWinnersText(winners, isTest);
   const winnerHtml = formatWinnersHtml(winners, isTest);
