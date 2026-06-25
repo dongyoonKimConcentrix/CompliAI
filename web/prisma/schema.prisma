@@ -118,3 +118,20 @@ model MonthlyAnnouncementLog {
   @@unique([year, month])
   @@map("monthly_announcement_logs")
 }
+
+/// FastAPI(SQLModel)가 기록하는 AI 분석 로그 — Prisma db push 시 drop 방지
+model AIAnalysisLog {
+  id            Int      @id @default(autoincrement())
+  content_type  String
+  content_id    Int
+  text          String
+  sarcasm_score Int      @default(0)
+  aggression    Boolean  @default(false)
+  is_blocked    Boolean  @default(false)
+  ai_report     String   @default("{}")
+  created_at    DateTime @default(now())
+
+  @@index([content_type])
+  @@index([content_id])
+  @@map("ai_analysis_logs")
+}
