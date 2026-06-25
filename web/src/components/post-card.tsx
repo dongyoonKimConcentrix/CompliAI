@@ -28,11 +28,11 @@ export function PostCard({ post }: PostCardProps) {
         </div>
         <h2 className="card-title text-lg">{post.title}</h2>
         <p className="text-base-content/70 line-clamp-2">{post.content}</p>
-        <div className="card-actions justify-between items-center mt-2">
+        <div className="card-actions flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mt-2">
           <span className="text-sm text-base-content/50">
             {authorName} · {new Date(post.createdAt).toLocaleDateString("ko-KR")}
           </span>
-          <div className="flex gap-4 text-sm text-base-content/60">
+          <div className="flex gap-4 text-sm text-base-content/60 shrink-0">
             <span className="inline-flex items-center gap-1.5">
               <Icon name="fa-regular fa-heart" />
               {post._count.likes}

@@ -96,7 +96,7 @@ export default function LoginForm() {
   }
 
   return (
-    <div className="card bg-base-100 shadow-lg max-w-md mx-auto">
+    <div className="card bg-base-100 shadow-lg max-w-md mx-auto w-full">
       <div className="card-body">
         <h1 className="card-title text-2xl justify-center">로그인</h1>
         {verified && (

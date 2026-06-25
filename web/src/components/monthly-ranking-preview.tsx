@@ -30,8 +30,8 @@ export function MonthlyRankingPreview() {
   return (
     <div className="card bg-base-100 shadow-apple mt-8">
       <div className="card-body">
-        <div className="flex items-center justify-between">
-          <h2 className="card-title gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+          <h2 className="card-title gap-2 text-lg sm:text-xl">
             <Icon name="fa-solid fa-trophy" />
             {data?.period.label} 칭찬왕
           </h2>

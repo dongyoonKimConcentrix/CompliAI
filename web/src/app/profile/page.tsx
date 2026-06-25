@@ -44,7 +44,7 @@ export default function ProfilePage() {
   const canSetName = !user?.name;
 
   return (
-    <div className="card bg-base-100 shadow-lg max-w-md mx-auto">
+    <div className="card bg-base-100 shadow-lg max-w-md mx-auto w-full">
       <div className="card-body">
         <h1 className="card-title text-2xl">프로필 설정</h1>
         <p className="text-sm text-base-content/60">{user?.email}</p>

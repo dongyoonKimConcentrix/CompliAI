@@ -47,7 +47,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="card bg-base-100 shadow-lg max-w-md mx-auto">
+    <div className="card bg-base-100 shadow-lg max-w-md mx-auto w-full">
       <div className="card-body">
         <h1 className="card-title text-2xl justify-center">회원가입</h1>
         <form onSubmit={handleSubmit} className="space-y-4">

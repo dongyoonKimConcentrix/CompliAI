@@ -153,17 +153,17 @@ export default function PostDetailPage() {
             <span className="badge badge-neutral">{post.targetName}님께</span>
             <NegativeNuanceScore score={post.sarcasmScore} size="md" />
           </div>
-          <h1 className="text-2xl font-bold">{post.title}</h1>
-          <p className="whitespace-pre-wrap">{post.content}</p>
+          <h1 className="text-xl sm:text-2xl font-bold break-words">{post.title}</h1>
+          <p className="whitespace-pre-wrap break-words">{post.content}</p>
           {post.fileUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={post.fileUrl} alt="첨부 이미지" className="rounded-lg max-h-80 object-cover" />
+            <img src={post.fileUrl} alt="첨부 이미지" className="rounded-lg max-h-60 sm:max-h-80 w-full object-cover" />
           )}
-          <div className="flex items-center justify-between mt-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
             <span className="text-sm text-base-content/50">
               {postAuthorName} · {new Date(post.createdAt).toLocaleString("ko-KR")}
             </span>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {session && (
                 <button
                   className={`btn btn-sm gap-2 ${likeData?.liked ? "btn-neutral" : "btn-outline"}`}
@@ -196,7 +196,7 @@ export default function PostDetailPage() {
               <Icon name="fa-solid fa-microchip" />
               AI 분석 리포트
             </h2>
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <span className="font-semibold">부정적 뉘앙스</span>
                 <NegativeNuanceScore score={post.sarcasmScore} />
@@ -234,15 +234,15 @@ export default function PostDetailPage() {
                 e.preventDefault();
                 if (comment.trim()) commentMutation.mutate(comment);
               }}
-              className="flex gap-2"
+              className="flex flex-col sm:flex-row gap-2"
             >
               <input
-                className="input input-bordered flex-1"
+                className="input input-bordered w-full sm:flex-1"
                 placeholder="따뜻한 응원 댓글을 남겨 주세요"
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
               />
-              <button type="submit" className="btn btn-primary" disabled={commentMutation.isPending}>
+              <button type="submit" className="btn btn-primary w-full sm:w-auto" disabled={commentMutation.isPending}>
                 등록
               </button>
             </form>

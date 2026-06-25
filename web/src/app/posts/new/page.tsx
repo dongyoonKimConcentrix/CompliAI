@@ -60,7 +60,7 @@ export default function NewPostPage() {
   }
 
   return (
-    <div className="card bg-base-100 shadow-lg max-w-2xl mx-auto">
+    <div className="card bg-base-100 shadow-lg max-w-2xl mx-auto w-full">
       <div className="card-body">
         <h1 className="card-title text-2xl">칭찬 글 작성</h1>
         <form onSubmit={handleSubmit} className="space-y-4">

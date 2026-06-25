@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { getServerSession } from "next-auth";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./globals.css";
@@ -13,6 +13,11 @@ export const metadata: Metadata = {
   description: "사내 직원 간 따뜻한 칭찬 문화를 AI로 보호하는 플랫폼",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession(authOptions);
 
@@ -22,7 +27,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Providers session={session}>
           <ThemeWrapper>
             <Navbar />
-            <main className="container mx-auto px-4 py-6 max-w-4xl">{children}</main>
+            <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-4xl w-full">{children}</main>
             <GlobalModal />
           </ThemeWrapper>
         </Providers>

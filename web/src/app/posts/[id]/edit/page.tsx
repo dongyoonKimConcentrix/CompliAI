@@ -48,7 +48,7 @@ export default function EditPostPage() {
   if (isLoading) return <span className="loading loading-spinner loading-lg" />;
 
   return (
-    <div className="card bg-base-100 shadow-lg max-w-2xl mx-auto">
+    <div className="card bg-base-100 shadow-lg max-w-2xl mx-auto w-full">
       <div className="card-body">
         <h1 className="card-title text-2xl">칭찬 글 수정</h1>
         <form

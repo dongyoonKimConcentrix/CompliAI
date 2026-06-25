@@ -28,6 +28,7 @@
 
 body {
   min-height: 100vh;
+  overflow-x: hidden;
   font-family: "GMarketSans", -apple-system, BlinkMacSystemFont, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

@@ -17,9 +17,9 @@ export function MonthlyLeaderboard({ leaders, showFromRank = 4 }: MonthlyLeaderb
       {rest.map((entry) => (
         <div
           key={entry.userId}
-          className="flex items-center gap-4 p-4 rounded-xl bg-base-100 border border-base-300"
+          className="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl bg-base-100 border border-base-300"
         >
-          <span className="text-lg font-semibold w-8 text-center text-base-content/50">
+          <span className="text-base sm:text-lg font-semibold w-6 sm:w-8 text-center text-base-content/50 shrink-0">
             {entry.rank}
           </span>
           <div className="flex-1 min-w-0">

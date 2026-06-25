@@ -9,7 +9,7 @@ export function GlobalModal() {
 
   return (
     <dialog className="modal modal-open">
-      <div className="modal-box">
+      <div className="modal-box w-11/12 max-w-md">
         <h3 className="font-bold text-lg">알림</h3>
         <p className="py-4">{modalContent}</p>
         <div className="modal-action">

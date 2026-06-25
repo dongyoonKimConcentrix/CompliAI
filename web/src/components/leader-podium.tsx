@@ -21,7 +21,7 @@ export function LeaderPodium({ leaders }: LeaderPodiumProps) {
   }
 
   return (
-    <div className="flex items-end justify-center gap-3 sm:gap-6 pt-4">
+    <div className="flex items-end justify-center gap-2 sm:gap-6 pt-4 overflow-x-auto">
       {podiumConfig.map(({ rank, height, icon, order }) => {
         const leader = leaders.find((entry) => entry.rank === rank);
         const isFirst = rank === 1;
@@ -29,7 +29,7 @@ export function LeaderPodium({ leaders }: LeaderPodiumProps) {
         return (
           <div
             key={rank}
-            className={`flex flex-col items-center w-28 sm:w-32 ${order}`}
+            className={`flex flex-col items-center w-24 sm:w-32 shrink-0 ${order}`}
           >
             {leader ? (
               <>

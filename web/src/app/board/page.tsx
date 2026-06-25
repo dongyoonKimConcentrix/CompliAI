@@ -42,22 +42,22 @@ export default function BoardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <h1 className="text-3xl font-bold">칭찬 게시판</h1>
+      <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 items-stretch sm:items-center justify-between">
+        <h1 className="text-2xl sm:text-3xl font-bold">칭찬 게시판</h1>
         <form
-          className="join w-full sm:w-auto"
+          className="flex flex-col sm:flex-row sm:join w-full sm:w-auto gap-2 sm:gap-0"
           onSubmit={(e) => {
             e.preventDefault();
             setQuery(search);
           }}
         >
           <input
-            className="input input-bordered join-item w-full sm:w-64"
+            className="input input-bordered w-full sm:w-64 sm:join-item"
             placeholder="제목, 본문, 대상 검색..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-          <button type="submit" className="btn btn-primary join-item gap-2">
+          <button type="submit" className="btn btn-primary sm:join-item gap-2 w-full sm:w-auto">
             <Icon name="fa-solid fa-magnifying-glass" />
             검색
           </button>

@@ -19,7 +19,7 @@ export default function MyPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-3xl font-bold">마이페이지</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold">마이페이지</h1>
 
       <section>
         <h2 className="text-xl font-semibold mb-4">내가 쓴 칭찬 글</h2>
