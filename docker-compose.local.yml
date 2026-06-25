@@ -6,6 +6,8 @@ services:
       context: ./web
       target: builder
     image: dongyoonkimconcentrix/compliai-migrate:latest
+    volumes:
+      - ./web/prisma:/app/prisma:ro
 
   api:
     build: ./api

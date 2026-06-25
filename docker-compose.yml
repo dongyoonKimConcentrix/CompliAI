@@ -27,8 +27,12 @@ services:
   migrate:
     image: dongyoonkimconcentrix/compliai-migrate:latest
     profiles: ["migrate"]
+    working_dir: /app
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-myuser}:${POSTGRES_PASSWORD:-mypassword}@db:5432/${POSTGRES_DB:-compliai_db}
+    # VM git pull 후 최신 schema.prisma 사용 (Hub 이미지에 구 스키마가 있어도 drop 방지)
+    volumes:
+      - ./web/prisma:/app/prisma:ro
     command: ["npx", "prisma", "db", "push", "--skip-generate"]
     depends_on:
       db:
