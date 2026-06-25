@@ -208,6 +208,20 @@ export default function PostDetailPage() {
             {"reason" in (post.aiReport ?? {}) && (
               <p className="text-sm mt-2">{(post.aiReport as { reason?: string }).reason}</p>
             )}
+            {"detected_irony" in (post.aiReport ?? {}) && (
+              <div className="text-sm mt-3 space-y-1">
+                <p>
+                  <span className="font-semibold">모순·비아냥:</span>{" "}
+                  {(post.aiReport as { detected_irony?: string }).detected_irony}
+                </p>
+                {"hidden_intent" in (post.aiReport ?? {}) && (
+                  <p>
+                    <span className="font-semibold">숨은 의도:</span>{" "}
+                    {(post.aiReport as { hidden_intent?: string }).hidden_intent}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
