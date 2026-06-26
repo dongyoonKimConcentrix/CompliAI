@@ -32,7 +32,7 @@ export async function GET(request: Request) {
     orderBy: { createdAt: "desc" },
     include: {
       author: { select: { nickname: true, email: true } },
-      _count: { select: { likes: true, comments: true } },
+      _count: { select: { likes: true, comments: true, reports: true } },
     },
   });
 

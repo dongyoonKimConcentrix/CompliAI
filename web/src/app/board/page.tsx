@@ -13,9 +13,10 @@ type Post = {
   targetName: string;
   isBlinded: boolean;
   sarcasmScore: number;
+  authorId: string;
   createdAt: string;
   author: { nickname: string; email: string };
-  _count: { likes: number; comments: number };
+  _count: { likes: number; comments: number; reports: number };
 };
 
 async function fetchPosts({ pageParam, query }: { pageParam?: string; query: string }) {

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Icon } from "@/components/icon";
 import { getAuthorDisplayName } from "@/lib/author-display";
 import { NegativeNuanceScore } from "@/components/negative-nuance-score";
+import { PostReportButton } from "@/components/post-report-button";
 
 type PostCardProps = {
   post: {
@@ -10,18 +11,19 @@ type PostCardProps = {
     content: string;
     targetName: string;
     sarcasmScore: number;
+    authorId: string;
     createdAt: string;
     author: { nickname: string; email: string };
-    _count: { likes: number; comments: number };
+    _count: { likes: number; comments: number; reports: number };
   };
 };
 
 export function PostCard({ post }: PostCardProps) {
-  const authorName = getAuthorDisplayName(post.author, post.sarcasmScore);
+  const authorName = getAuthorDisplayName(post.author, post.sarcasmScore, post._count.reports);
 
   return (
-    <Link href={`/posts/${post.id}`} className="card bg-base-100 hover:shadow-apple-lg transition-shadow">
-      <div className="card-body">
+    <div className="card bg-base-100 hover:shadow-apple-lg transition-shadow">
+      <Link href={`/posts/${post.id}`} className="card-body">
         <div className="flex items-center gap-2 flex-wrap">
           <span className="badge badge-neutral badge-outline">{post.targetName}님께</span>
           <NegativeNuanceScore score={post.sarcasmScore} />
@@ -43,7 +45,15 @@ export function PostCard({ post }: PostCardProps) {
             </span>
           </div>
         </div>
+      </Link>
+      <div className="px-6 pb-4 flex justify-end">
+        <PostReportButton
+          postId={post.id}
+          authorId={post.authorId}
+          reportCount={post._count.reports}
+          size="xs"
+        />
       </div>
-    </Link>
+    </div>
   );
 }

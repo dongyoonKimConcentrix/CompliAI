@@ -10,6 +10,7 @@ import { useUIStore } from "@/store/ui-store";
 import { getAuthorDisplayName } from "@/lib/author-display";
 import { NegativeNuanceScore } from "@/components/negative-nuance-score";
 import { Icon } from "@/components/icon";
+import { PostReportButton } from "@/components/post-report-button";
 
 type PostDetail = {
   id: string;
@@ -33,7 +34,7 @@ type PostDetail = {
     createdAt: string;
     author: { id: string; nickname: string; email: string };
   }[];
-  _count: { likes: number };
+  _count: { likes: number; reports: number };
 };
 
 export default function PostDetailPage() {
@@ -143,7 +144,11 @@ export default function PostDetailPage() {
   const post = data.post;
   const isOwner = session?.user?.id === post.authorId;
   const isAdmin = session?.user?.role === UserRole.ADMIN;
-  const postAuthorName = getAuthorDisplayName(post.author, post.sarcasmScore);
+  const postAuthorName = getAuthorDisplayName(
+    post.author,
+    post.sarcasmScore,
+    post._count.reports
+  );
 
   return (
     <div className="space-y-6">
@@ -173,6 +178,11 @@ export default function PostDetailPage() {
                   {likeData?.count ?? post._count.likes}
                 </button>
               )}
+              <PostReportButton
+                postId={post.id}
+                authorId={post.authorId}
+                reportCount={post._count.reports}
+              />
               {isOwner && (
                 <Link href={`/posts/${id}/edit`} className="btn btn-sm btn-outline gap-2">
                   <Icon name="fa-solid fa-pen" />

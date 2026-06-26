@@ -21,7 +21,7 @@ export async function GET(_request: Request, { params }: Params) {
         orderBy: { createdAt: "asc" },
         include: { author: { select: { id: true, nickname: true, email: true } } },
       },
-      _count: { select: { likes: true } },
+      _count: { select: { likes: true, reports: true } },
     },
   });
 
