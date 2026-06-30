@@ -34,8 +34,7 @@ export async function getMonthlyRanking(
 
   const [users, posts] = await Promise.all([
     prisma.user.findMany({
-      where: { name: { not: "" } },
-      select: { id: true, name: true, nickname: true },
+      select: { id: true, name: true },
     }),
     prisma.post.findMany({
       where: {
@@ -46,7 +45,7 @@ export async function getMonthlyRanking(
       },
       select: {
         authorId: true,
-        targetName: true,
+        targetUserId: true,
         sarcasmScore: true,
         aggression: true,
         createdAt: true,
@@ -57,7 +56,7 @@ export async function getMonthlyRanking(
 
   const praisePosts = posts.map((post) => ({
     authorId: post.authorId,
-    targetName: post.targetName,
+    targetUserId: post.targetUserId,
     sarcasmScore: post.sarcasmScore,
     aggression: post.aggression,
     createdAt: post.createdAt,
@@ -80,7 +79,7 @@ export async function getMonthlyRanking(
       formula: "점수 = 칭찬 건수 × 10 + 좋아요 × 1",
     },
     criteria:
-      "긍정 칭찬만 집계 (부정적 뉘앙스 70점 미만·공격성 없음), 자기 칭찬 제외, 최초 작성 월 기준, 이름 부분 일치 통합",
+      "긍정 칭찬만 집계 (부정적 뉘앙스 70점 미만·공격성 없음), 자기 칭찬 제외, 최초 작성 월 기준",
   };
 }
 

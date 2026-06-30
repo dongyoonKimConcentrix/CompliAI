@@ -9,11 +9,11 @@ type PostCardProps = {
     id: string;
     title: string;
     content: string;
-    targetName: string;
     sarcasmScore: number;
     authorId: string;
     createdAt: string;
-    author: { nickname: string; email: string };
+    author: { displayId: string; email: string };
+    target: { id: string; name: string };
     _count: { likes: number; comments: number; reports: number };
   };
 };
@@ -25,13 +25,13 @@ export function PostCard({ post }: PostCardProps) {
     <div className="card bg-base-100 hover:shadow-apple-lg transition-shadow">
       <Link href={`/posts/${post.id}`} className="card-body">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="badge badge-neutral badge-outline">{post.targetName}님께</span>
+          <span className="badge badge-neutral badge-outline">{post.target.name}님께</span>
           <NegativeNuanceScore score={post.sarcasmScore} />
         </div>
         <h2 className="card-title text-lg">{post.title}</h2>
         <p className="text-base-content/70 line-clamp-2">{post.content}</p>
         <div className="card-actions flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mt-2">
-          <span className="text-sm text-base-content/50">
+          <span className="text-sm text-base-content/50 font-mono">
             {authorName} · {new Date(post.createdAt).toLocaleDateString("ko-KR")}
           </span>
           <div className="flex gap-4 text-sm text-base-content/60 shrink-0">

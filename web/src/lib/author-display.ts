@@ -3,7 +3,7 @@ import { SARCASM_THRESHOLD } from "@/lib/ai";
 export const REPORT_THRESHOLD = 3;
 
 export type AuthorInfo = {
-  nickname: string;
+  displayId: string;
   email: string;
 };
 
@@ -15,7 +15,7 @@ export function getAuthorDisplayName(
   reportThreshold: number = REPORT_THRESHOLD
 ): string {
   if (sarcasmScore >= sarcasmThreshold || reportCount >= reportThreshold) {
-    return `${author.nickname} (${author.email})`;
+    return `${author.displayId} (${author.email})`;
   }
-  return author.nickname;
+  return author.displayId;
 }

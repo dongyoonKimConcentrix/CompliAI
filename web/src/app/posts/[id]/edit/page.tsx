@@ -3,6 +3,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
+import { PraiseTargetSelect } from "@/components/praise-target-select";
 import { useUIStore } from "@/store/ui-store";
 
 export default function EditPostPage() {
@@ -11,6 +12,7 @@ export default function EditPostPage() {
   const openModal = useUIStore((s) => s.openModal);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [targetUserId, setTargetUserId] = useState("");
   const [targetName, setTargetName] = useState("");
 
   const { data, isLoading } = useQuery({
@@ -26,7 +28,8 @@ export default function EditPostPage() {
     if (data?.post) {
       setTitle(data.post.title);
       setContent(data.post.content);
-      setTargetName(data.post.targetName);
+      setTargetUserId(data.post.target.id);
+      setTargetName(data.post.target.name);
     }
   }, [data]);
 
@@ -35,7 +38,7 @@ export default function EditPostPage() {
       const res = await fetch(`/api/posts/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content, targetName }),
+        body: JSON.stringify({ title, content, targetUserId }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
@@ -54,14 +57,25 @@ export default function EditPostPage() {
         <form
           onSubmit={(e: FormEvent) => {
             e.preventDefault();
+            if (!targetUserId) {
+              openModal("칭찬 대상을 선택해 주세요.");
+              return;
+            }
             mutation.mutate();
           }}
           className="space-y-4"
         >
-          <input className="input input-bordered w-full" value={targetName} onChange={(e) => setTargetName(e.target.value)} required />
+          <PraiseTargetSelect
+            value={targetUserId}
+            initialLabel={targetName}
+            onChange={(userId, name) => {
+              setTargetUserId(userId);
+              setTargetName(name);
+            }}
+          />
           <input className="input input-bordered w-full" value={title} onChange={(e) => setTitle(e.target.value)} required />
           <textarea className="textarea textarea-bordered w-full h-32" value={content} onChange={(e) => setContent(e.target.value)} required />
-          <button type="submit" className="btn btn-primary w-full" disabled={mutation.isPending}>
+          <button type="submit" className="btn btn-primary w-full" disabled={mutation.isPending || !targetUserId}>
             {mutation.isPending ? <span className="loading loading-spinner" /> : "수정 완료"}
           </button>
         </form>

@@ -22,8 +22,8 @@ model User {
   id                String    @id @default(cuid())
   email             String    @unique
   passwordHash      String
-  name              String    @default("")
-  nickname          String
+  name              String
+  displayId         String    @unique
   role              UserRole  @default(USER)
   profileImage      String?
   emailVerified     DateTime?
@@ -31,17 +31,18 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
-  posts    Post[]
-  comments Comment[]
-  likes    Like[]
-  reports  Report[]
+  posts         Post[] @relation("PostAuthor")
+  targetedPosts Post[] @relation("PraiseTarget")
+  comments      Comment[]
+  likes         Like[]
+  reports       Report[]
 }
 
 model Post {
   id                 String             @id @default(cuid())
   title              String
   content            String
-  targetName         String
+  targetUserId       String
   fileUrl            String?
   isBlinded          Boolean            @default(false)
   sarcasmScore       Int                @default(0)
@@ -54,12 +55,14 @@ model Post {
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
 
-  author   User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author   User      @relation("PostAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  target   User      @relation("PraiseTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
   comments Comment[]
   likes    Like[]
   reports  Report[]
 
-  @@index([title, content, targetName])
+  @@index([title, content])
+  @@index([targetUserId])
   @@index([createdAt])
   @@index([createdAt, sarcasmScore, aggression])
   @@index([moderationStatus])

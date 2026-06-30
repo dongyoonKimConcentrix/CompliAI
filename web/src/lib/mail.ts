@@ -65,7 +65,7 @@ function getSharedTransport(): { transport: Transporter; config: MailConfig } | 
 
 export async function sendVerificationEmail(
   to: string,
-  nickname: string,
+  name: string,
   verifyUrl: string
 ): Promise<void> {
   const shared = getSharedTransport();
@@ -81,7 +81,7 @@ export async function sendVerificationEmail(
     to,
     subject: "[CompliAI] 이메일 인증을 완료해 주세요",
     text: [
-      `${nickname}님, CompliAI 회원가입을 환영합니다.`,
+      `${name}님, CompliAI 회원가입을 환영합니다.`,
       "",
       "아래 링크를 클릭해 이메일 인증을 완료해 주세요.",
       verifyUrl,
@@ -92,7 +92,7 @@ export async function sendVerificationEmail(
     html: `
       <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
         <h2 style="color: #6366f1;">CompliAI 이메일 인증</h2>
-        <p>${nickname}님, 회원가입을 환영합니다.</p>
+        <p>${name}님, 회원가입을 환영합니다.</p>
         <p>아래 버튼을 클릭해 이메일 인증을 완료해 주세요.</p>
         <p style="margin: 32px 0;">
           <a href="${verifyUrl}" style="background:#6366f1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;">
@@ -109,11 +109,10 @@ export async function sendVerificationEmail(
 
 export type MonthlyWinnerMailPayload = {
   to: string;
-  nickname: string;
+  name: string;
   periodLabel: string;
   winners: Array<{
     name: string;
-    nickname: string;
     score: number;
     praiseCount: number;
     likeCount: number;
@@ -134,7 +133,7 @@ function formatWinnersText(
   return winners
     .map(
       (w, i) =>
-        `${winners.length > 1 ? `${i + 1}. ` : ""}${w.name || w.nickname} (${w.score}점 · 칭찬 ${w.praiseCount}건 · 좋아요 ${w.likeCount})`
+        `${winners.length > 1 ? `${i + 1}. ` : ""}${w.name} (${w.score}점 · 칭찬 ${w.praiseCount}건 · 좋아요 ${w.likeCount})`
     )
     .join("\n");
 }
@@ -152,7 +151,7 @@ function formatWinnersHtml(
   const items = winners
     .map(
       (w) =>
-        `<li><strong>${w.name || w.nickname}</strong> — ${w.score}점 (칭찬 ${w.praiseCount}건, 좋아요 ${w.likeCount})</li>`
+        `<li><strong>${w.name}</strong> — ${w.score}점 (칭찬 ${w.praiseCount}건, 좋아요 ${w.likeCount})</li>`
     )
     .join("");
   return `<ul style="padding-left: 20px;">${items}</ul>`;
@@ -168,7 +167,7 @@ export async function sendMonthlyWinnerAnnouncement(
   }
 
   const { transport, config } = shared;
-  const { to, nickname, periodLabel, winners, rankingsUrl, isTest } = payload;
+  const { to, name, periodLabel, winners, rankingsUrl, isTest } = payload;
   const winnerText = formatWinnersText(winners, isTest);
   const winnerHtml = formatWinnersHtml(winners, isTest);
   const testPrefix = isTest ? "[테스트] " : "";
@@ -187,7 +186,7 @@ export async function sendMonthlyWinnerAnnouncement(
     to,
     subject,
     text: [
-      `${nickname}님, 안녕하세요.`,
+      `${name}님, 안녕하세요.`,
       "",
       introLine,
       "",
@@ -200,7 +199,7 @@ export async function sendMonthlyWinnerAnnouncement(
     html: `
       <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
         <h2 style="color: #171717;">${testPrefix}${periodLabel} 칭찬왕 🏆</h2>
-        <p>${nickname}님, 안녕하세요.</p>
+        <p>${name}님, 안녕하세요.</p>
         <p>${introLine}</p>
         ${winnerHtml}
         <p style="margin: 32px 0;">

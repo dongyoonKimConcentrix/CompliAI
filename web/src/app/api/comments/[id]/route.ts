@@ -36,7 +36,7 @@ export async function PUT(request: Request, { params }: Params) {
   const updated = await prisma.comment.update({
     where: { id },
     data: { content },
-    include: { author: { select: { id: true, nickname: true, email: true } } },
+    include: { author: { select: { id: true, displayId: true, email: true } } },
   });
 
   return NextResponse.json({ comment: updated });

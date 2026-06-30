@@ -16,7 +16,7 @@ type ModerationItem = {
   sarcasmScore: number;
   aggression: boolean;
   createdAt: string;
-  author: { id: string; nickname: string; email: string; name: string };
+  author: { id: string; displayId: string; email: string; name: string };
   postTitle: string | null;
   postId: string | null;
 };
@@ -205,7 +205,7 @@ export default function AdminPage() {
                   )}
                   <p className="text-sm whitespace-pre-wrap line-clamp-3">{item.content}</p>
                   <p className="text-xs text-base-content/50">
-                    작성자: {item.author.nickname} ({item.author.email})
+                    작성자: {item.author.displayId} ({item.author.email}) · 실명: {item.author.name}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <button
@@ -245,7 +245,6 @@ type MonthlyWinnerStatus = {
   period: { year: number; month: number; label: string };
   winners: Array<{
     name: string;
-    nickname: string;
     score: number;
     praiseCount: number;
     likeCount: number;
@@ -345,7 +344,7 @@ function MonthlyWinnerEmailPanel() {
               <p>
                 <span className="text-base-content/60">칭찬왕:</span>{" "}
                 {status.winners
-                  .map((w) => `${w.name || w.nickname} (${w.score}점)`)
+                  .map((w) => `${w.name} (${w.score}점)`)
                   .join(", ")}
               </p>
             ) : (

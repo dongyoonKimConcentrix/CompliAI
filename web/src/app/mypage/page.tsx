@@ -27,10 +27,10 @@ export default function MyPage() {
           <p className="text-base-content/60">작성한 글이 없습니다.</p>
         ) : (
           <div className="space-y-3">
-            {data?.posts?.map((post: { id: string; title: string; targetName: string; _count: { likes: number; comments: number } }) => (
+            {data?.posts?.map((post: { id: string; title: string; target: { name: string }; _count: { likes: number; comments: number } }) => (
               <Link key={post.id} href={`/posts/${post.id}`} className="block card bg-base-100 hover:shadow-apple transition-shadow">
                 <div className="card-body py-4">
-                  <span className="badge badge-sm badge-neutral badge-outline w-fit">{post.targetName}님께</span>
+                  <span className="badge badge-sm badge-neutral badge-outline w-fit">{post.target.name}님께</span>
                   <h3 className="font-medium">{post.title}</h3>
                   <div className="text-sm text-base-content/50 flex gap-4">
                     <span className="inline-flex items-center gap-1.5">

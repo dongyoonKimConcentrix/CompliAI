@@ -8,7 +8,6 @@ export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [nickname, setNickname] = useState("");
   const [message, setMessage] = useState("");
   const [verifyUrl, setVerifyUrl] = useState("");
   const [error, setError] = useState("");
@@ -29,7 +28,7 @@ export default function RegisterPage() {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name, nickname }),
+      body: JSON.stringify({ email, password, name }),
     });
 
     const json = await res.json();
@@ -55,19 +54,9 @@ export default function RegisterPage() {
             <label className="label"><span className="label-text">이름</span></label>
             <input
               className="input input-bordered w-full"
-              placeholder="홍길동 (칭찬 대상 매칭·자기 칭찬 제외용)"
+              placeholder="홍길동 (칭찬 대상·랭킹에 사용)"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
-          <div className="form-control">
-            <label className="label"><span className="label-text">닉네임</span></label>
-            <input
-              className="input input-bordered w-full"
-              placeholder="게시판에 표시될 닉네임"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
               required
             />
           </div>

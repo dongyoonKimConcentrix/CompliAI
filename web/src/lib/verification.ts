@@ -20,13 +20,13 @@ export type SendVerificationResult = {
 
 export async function dispatchVerificationEmail(
   email: string,
-  nickname: string,
+  name: string,
   token: string
 ): Promise<SendVerificationResult> {
   const verifyUrl = getVerifyUrl(token);
 
   if (isSmtpConfigured()) {
-    void sendVerificationEmail(email, nickname, verifyUrl).catch((err) => {
+    void sendVerificationEmail(email, name, verifyUrl).catch((err) => {
       console.error("[CompliAI] 인증 메일 발송 실패:", email, err);
     });
     return {

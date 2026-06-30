@@ -5,7 +5,7 @@ export const PRAISE_LIKE_POINTS = 1;
 
 export type PraisePost = {
   authorId: string;
-  targetName: string;
+  targetUserId: string;
   sarcasmScore: number;
   aggression: boolean;
   createdAt: Date;
@@ -15,39 +15,28 @@ export type PraisePost = {
 export type PraiseUser = {
   id: string;
   name: string;
-  nickname: string;
 };
 
 export function normalizeName(value: string): string {
   return value.trim().replace(/\s+/g, "");
 }
 
-export function namesMatch(registeredName: string, targetName: string): boolean {
+export function namesMatch(registeredName: string, candidateName: string): boolean {
   const a = normalizeName(registeredName);
-  const b = normalizeName(targetName);
+  const b = normalizeName(candidateName);
   if (!a || !b) return false;
   if (a === b) return true;
   return a.includes(b) || b.includes(a);
 }
 
-export function isPositivePraise(post: Pick<PraisePost, "sarcasmScore" | "aggression">): boolean {
-  return post.sarcasmScore < SARCASM_THRESHOLD && !post.aggression;
-}
-
-export function resolveTargetUser(
-  targetName: string,
-  users: PraiseUser[]
-): PraiseUser | null {
-  const matches = users.filter((user) => user.name && namesMatch(user.name, targetName));
-  if (matches.length === 0) return null;
-  if (matches.length === 1) return matches[0];
-  return matches.sort((a, b) => b.name.length - a.name.length)[0];
-}
-
 export function isDuplicateName(name: string, users: PraiseUser[]): boolean {
   const normalized = normalizeName(name);
   if (!normalized) return false;
-  return users.some((user) => user.name && namesMatch(user.name, normalized));
+  return users.some((user) => namesMatch(user.name, normalized));
+}
+
+export function isPositivePraise(post: Pick<PraisePost, "sarcasmScore" | "aggression">): boolean {
+  return post.sarcasmScore < SARCASM_THRESHOLD && !post.aggression;
 }
 
 export function getMonthRangeKST(year: number, month: number): { start: Date; end: Date } {
@@ -80,7 +69,6 @@ export type LeaderboardEntry = {
   rank: number;
   userId: string;
   name: string;
-  nickname: string;
   praiseCount: number;
   likeCount: number;
   score: number;
@@ -90,22 +78,22 @@ export function buildLeaderboard(
   posts: PraisePost[],
   users: PraiseUser[]
 ): LeaderboardEntry[] {
+  const userMap = new Map(users.map((user) => [user.id, user]));
   const totals = new Map<
     string,
-    { userId: string; name: string; nickname: string; praiseCount: number; likeCount: number }
+    { userId: string; name: string; praiseCount: number; likeCount: number }
   >();
 
   for (const post of posts) {
     if (!isPositivePraise(post)) continue;
+    if (post.authorId === post.targetUserId) continue;
 
-    const recipient = resolveTargetUser(post.targetName, users);
+    const recipient = userMap.get(post.targetUserId);
     if (!recipient) continue;
-    if (post.authorId === recipient.id) continue;
 
     const current = totals.get(recipient.id) ?? {
       userId: recipient.id,
       name: recipient.name,
-      nickname: recipient.nickname,
       praiseCount: 0,
       likeCount: 0,
     };
@@ -130,7 +118,6 @@ export function buildLeaderboard(
     rank: index + 1,
     userId: entry.userId,
     name: entry.name,
-    nickname: entry.nickname,
     praiseCount: entry.praiseCount,
     likeCount: entry.likeCount,
     score: entry.score,

@@ -109,9 +109,7 @@ export default function RankingsPage() {
             <ul className="list-disc list-inside space-y-1">
               <li>{data.scoring.formula}</li>
               <li>{data.criteria}</li>
-              <li>
-                칭찬 대상 이름은 부분 일치로 통합됩니다 (예: &quot;길동&quot;과 &quot;홍길동&quot; → 동일 인물)
-              </li>
+              <li>칭찬 대상은 회원 선택으로 지정되며, 자기 칭찬은 집계에서 제외됩니다</li>
               <li>수정된 글도 최초 작성 월에 반영됩니다</li>
             </ul>
           </div>

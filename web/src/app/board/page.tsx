@@ -10,12 +10,12 @@ type Post = {
   id: string;
   title: string;
   content: string;
-  targetName: string;
   isBlinded: boolean;
   sarcasmScore: number;
   authorId: string;
   createdAt: string;
-  author: { nickname: string; email: string };
+  author: { displayId: string; email: string };
+  target: { id: string; name: string };
   _count: { likes: number; comments: number; reports: number };
 };
 

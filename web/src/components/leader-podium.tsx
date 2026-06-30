@@ -40,9 +40,6 @@ export function LeaderPodium({ leaders }: LeaderPodiumProps) {
                 <p className={`font-semibold text-center truncate w-full ${isFirst ? "text-lg" : "text-base"}`}>
                   {leader.name}
                 </p>
-                <p className="text-xs text-base-content/50 truncate w-full text-center">
-                  {leader.nickname}
-                </p>
                 <p className="text-sm font-medium mt-1">{leader.score}점</p>
                 <p className="text-xs text-base-content/50 flex items-center gap-2 justify-center">
                   <span>{leader.praiseCount}건</span>

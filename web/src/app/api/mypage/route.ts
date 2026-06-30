@@ -11,7 +11,10 @@ export async function GET() {
       where: { authorId: session!.user.id },
       orderBy: { createdAt: "desc" },
       take: 20,
-      include: { _count: { select: { likes: true, comments: true } } },
+      include: {
+        target: { select: { name: true } },
+        _count: { select: { likes: true, comments: true } },
+      },
     }),
     prisma.comment.findMany({
       where: { authorId: session!.user.id },

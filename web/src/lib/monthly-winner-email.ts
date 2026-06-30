@@ -75,7 +75,7 @@ export async function runMonthlyWinnerEmailJob(
       const appUrl = getAppBaseUrl();
       await sendMonthlyWinnerAnnouncement({
         to: testEmail,
-        nickname: "테스트",
+        name: "테스트",
         periodLabel: ranking.period.label,
         winners: [],
         rankingsUrl: `${appUrl}/rankings`,
@@ -150,10 +150,10 @@ export async function runMonthlyWinnerEmailJob(
   }
 
   const recipients = testEmail
-    ? [{ email: testEmail, nickname: "테스트" }]
+    ? [{ email: testEmail, name: "테스트" }]
     : await prisma.user.findMany({
         where: { emailVerified: { not: null } },
-        select: { email: true, nickname: true },
+        select: { email: true, name: true },
       });
 
   if (recipients.length === 0) {
@@ -168,12 +168,12 @@ export async function runMonthlyWinnerEmailJob(
   }
 
   const appUrl = getAppBaseUrl();
-  const winnerNames = winners.map((w) => w.name || w.nickname).join(", ");
+  const winnerNames = winners.map((w) => w.name).join(", ");
 
   for (const recipient of recipients) {
     await sendMonthlyWinnerAnnouncement({
       to: recipient.email,
-      nickname: recipient.nickname,
+      name: recipient.name,
       periodLabel: ranking.period.label,
       winners,
       rankingsUrl: `${appUrl}/rankings`,

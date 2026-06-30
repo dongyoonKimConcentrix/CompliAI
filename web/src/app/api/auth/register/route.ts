@@ -6,13 +6,14 @@ import {
   dispatchVerificationEmail,
 } from "@/lib/verification";
 import { ALLOWED_EMAIL_ERROR, isAllowedCompanyEmail } from "@/lib/email-policy";
+import { createUniqueDisplayId } from "@/lib/display-id";
 import { isDuplicateName, normalizeName } from "@/lib/praise-policy";
 
 export async function POST(request: Request) {
   try {
-    const { email, password, nickname, name } = await request.json();
+    const { email, password, name } = await request.json();
 
-    if (!email || !password || !nickname || !name) {
+    if (!email || !password || !name) {
       return NextResponse.json({ error: "모든 필드를 입력해 주세요." }, { status: 400 });
     }
 
@@ -33,8 +34,7 @@ export async function POST(request: Request) {
     }
 
     const registeredUsers = await prisma.user.findMany({
-      where: { name: { not: "" } },
-      select: { id: true, name: true, nickname: true },
+      select: { id: true, name: true },
     });
 
     if (isDuplicateName(normalizedName, registeredUsers)) {
@@ -44,6 +44,11 @@ export async function POST(request: Request) {
       );
     }
 
+    const displayId = await createUniqueDisplayId(async (id) => {
+      const found = await prisma.user.findUnique({ where: { displayId: id } });
+      return !!found;
+    });
+
     const passwordHash = await bcrypt.hash(password, 12);
     const verificationToken = createVerificationToken();
 
@@ -52,12 +57,16 @@ export async function POST(request: Request) {
         email: normalizedEmail,
         passwordHash,
         name: normalizedName,
-        nickname,
+        displayId,
         verificationToken,
       },
     });
 
-    const mailResult = await dispatchVerificationEmail(normalizedEmail, nickname, verificationToken);
+    const mailResult = await dispatchVerificationEmail(
+      normalizedEmail,
+      normalizedName,
+      verificationToken
+    );
 
     return NextResponse.json({
       message: mailResult.message,

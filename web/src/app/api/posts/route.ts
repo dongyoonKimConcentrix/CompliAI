@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireAuth } from "@/lib/api-auth";
 import { analyzeContent } from "@/lib/ai";
+import { findValidPraiseTarget } from "@/lib/praise-target";
 import { getSarcasmThreshold, needsModerationReview } from "@/lib/settings";
 
 const PAGE_SIZE = 10;
@@ -20,7 +21,7 @@ export async function GET(request: Request) {
         OR: [
           { title: { contains: q, mode: "insensitive" as const } },
           { content: { contains: q, mode: "insensitive" as const } },
-          { targetName: { contains: q, mode: "insensitive" as const } },
+          { target: { name: { contains: q, mode: "insensitive" as const } } },
         ],
       }
     : {};
@@ -31,7 +32,8 @@ export async function GET(request: Request) {
     ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     orderBy: { createdAt: "desc" },
     include: {
-      author: { select: { nickname: true, email: true } },
+      author: { select: { displayId: true, email: true } },
+      target: { select: { id: true, name: true } },
       _count: { select: { likes: true, comments: true, reports: true } },
     },
   });
@@ -50,10 +52,18 @@ export async function POST(request: Request) {
   if (error) return error;
 
   try {
-    const { title, content, targetName, fileUrl } = await request.json();
+    const { title, content, targetUserId, fileUrl } = await request.json();
 
-    if (!title || !content || !targetName) {
+    if (!title || !content || !targetUserId) {
       return NextResponse.json({ error: "필수 항목을 입력해 주세요." }, { status: 400 });
+    }
+
+    const { target, error: targetError } = await findValidPraiseTarget(
+      targetUserId,
+      session!.user.id
+    );
+    if (!target) {
+      return NextResponse.json({ error: targetError }, { status: 400 });
     }
 
     const text = `${title}\n${content}`;
@@ -81,7 +91,7 @@ export async function POST(request: Request) {
       data: {
         title,
         content,
-        targetName,
+        targetUserId: target.id,
         fileUrl: fileUrl || null,
         authorId: session!.user.id,
         sarcasmScore: analysis.sarcasm_score,

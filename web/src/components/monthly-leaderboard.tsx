@@ -24,7 +24,6 @@ export function MonthlyLeaderboard({ leaders, showFromRank = 4 }: MonthlyLeaderb
           </span>
           <div className="flex-1 min-w-0">
             <p className="font-medium truncate">{entry.name}</p>
-            <p className="text-sm text-base-content/50 truncate">{entry.nickname}</p>
           </div>
           <div className="text-right shrink-0">
             <p className="font-semibold">{entry.score}점</p>

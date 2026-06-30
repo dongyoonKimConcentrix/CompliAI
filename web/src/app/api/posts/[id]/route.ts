@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { canDeletePost, requireAuth } from "@/lib/api-auth";
 import { analyzeContent } from "@/lib/ai";
+import { findValidPraiseTarget } from "@/lib/praise-target";
 import { getSarcasmThreshold, needsModerationReview } from "@/lib/settings";
 
 type Params = { params: Promise<{ id: string }> };
@@ -16,10 +17,11 @@ export async function GET(_request: Request, { params }: Params) {
   const post = await prisma.post.findUnique({
     where: { id },
     include: {
-      author: { select: { id: true, nickname: true, email: true } },
+      author: { select: { id: true, displayId: true, email: true } },
+      target: { select: { id: true, name: true } },
       comments: {
         orderBy: { createdAt: "asc" },
-        include: { author: { select: { id: true, nickname: true, email: true } } },
+        include: { author: { select: { id: true, displayId: true, email: true } } },
       },
       _count: { select: { likes: true, reports: true } },
     },
@@ -44,7 +46,19 @@ export async function PUT(request: Request, { params }: Params) {
     return NextResponse.json({ error: "수정 권한이 없습니다." }, { status: 403 });
   }
 
-  const { title, content, targetName, fileUrl } = await request.json();
+  const { title, content, targetUserId, fileUrl } = await request.json();
+
+  if (!targetUserId) {
+    return NextResponse.json({ error: "칭찬 대상을 선택해 주세요." }, { status: 400 });
+  }
+
+  const { target, error: targetError } = await findValidPraiseTarget(
+    targetUserId,
+    session!.user.id
+  );
+  if (!target) {
+    return NextResponse.json({ error: targetError }, { status: 400 });
+  }
 
   const analysis = await analyzeContent(`${title}\n${content}`, "post", id);
   const threshold = await getSarcasmThreshold();
@@ -61,7 +75,7 @@ export async function PUT(request: Request, { params }: Params) {
     data: {
       title,
       content,
-      targetName,
+      targetUserId: target.id,
       fileUrl: fileUrl ?? post.fileUrl,
       sarcasmScore: analysis.sarcasm_score,
       aggression: analysis.aggression,

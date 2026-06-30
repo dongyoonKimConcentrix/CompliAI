@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       data: { verificationToken },
     });
 
-    const mailResult = await dispatchVerificationEmail(user.email, user.nickname, verificationToken);
+    const mailResult = await dispatchVerificationEmail(user.email, user.name, verificationToken);
 
     return NextResponse.json({
       message: mailResult.message,

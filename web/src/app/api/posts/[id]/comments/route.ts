@@ -16,7 +16,7 @@ export async function GET(_request: Request, { params }: Params) {
   const comments = await prisma.comment.findMany({
     where: { postId: id },
     orderBy: { createdAt: "asc" },
-    include: { author: { select: { id: true, nickname: true, email: true } } },
+    include: { author: { select: { id: true, displayId: true, email: true } } },
   });
 
   return NextResponse.json({ comments });
@@ -66,7 +66,7 @@ export async function POST(request: Request, { params }: Params) {
       moderationStatus,
       aiReport: analysis.ai_report as Prisma.InputJsonValue,
     },
-    include: { author: { select: { id: true, nickname: true, email: true } } },
+    include: { author: { select: { id: true, displayId: true, email: true } } },
   });
 
   return NextResponse.json({ comment, analysis }, { status: 201 });

@@ -16,7 +16,6 @@ type PostDetail = {
   id: string;
   title: string;
   content: string;
-  targetName: string;
   fileUrl: string | null;
   isBlinded: boolean;
   sarcasmScore: number;
@@ -24,7 +23,8 @@ type PostDetail = {
   aiReport: Record<string, unknown> | null;
   authorId: string;
   createdAt: string;
-  author: { id: string; nickname: string; email: string };
+  author: { id: string; displayId: string; email: string };
+  target: { id: string; name: string };
   comments: {
     id: string;
     content: string;
@@ -32,7 +32,7 @@ type PostDetail = {
     sarcasmScore: number;
     authorId: string;
     createdAt: string;
-    author: { id: string; nickname: string; email: string };
+    author: { id: string; displayId: string; email: string };
   }[];
   _count: { likes: number; reports: number };
 };
@@ -102,7 +102,7 @@ export default function PostDetailPage() {
                 createdAt: new Date().toISOString(),
                 author: {
                   id: session?.user?.id ?? "",
-                  nickname: session?.user?.name ?? "나",
+                  displayId: "pending",
                   email: session?.user?.email ?? "",
                 },
               },
@@ -155,7 +155,7 @@ export default function PostDetailPage() {
       <div className="card bg-base-100 shadow-lg">
         <div className="card-body">
           <div className="flex gap-2 flex-wrap">
-            <span className="badge badge-neutral">{post.targetName}님께</span>
+            <span className="badge badge-neutral">{post.target.name}님께</span>
             <NegativeNuanceScore score={post.sarcasmScore} size="md" />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold break-words">{post.title}</h1>
@@ -165,7 +165,7 @@ export default function PostDetailPage() {
             <img src={post.fileUrl} alt="첨부 이미지" className="rounded-lg max-h-60 sm:max-h-80 w-full object-cover" />
           )}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mt-4">
-            <span className="text-sm text-base-content/50">
+            <span className="text-sm text-base-content/50 font-mono">
               {postAuthorName} · {new Date(post.createdAt).toLocaleString("ko-KR")}
             </span>
             <div className="flex flex-wrap gap-2">
@@ -264,7 +264,7 @@ export default function PostDetailPage() {
               <div key={c.id} className="bg-base-200 rounded-lg p-3">
                 <p>{c.content}</p>
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-base-content/50">
+                  <span className="text-xs text-base-content/50 font-mono">
                     {commentAuthorName} · {new Date(c.createdAt).toLocaleString("ko-KR")}
                   </span>
                   {session?.user?.id === c.authorId && (

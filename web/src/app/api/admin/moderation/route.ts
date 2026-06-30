@@ -16,7 +16,8 @@ export async function GET(request: Request) {
       orderBy: { createdAt: "desc" },
       take: 50,
       include: {
-        author: { select: { id: true, nickname: true, email: true, name: true } },
+        author: { select: { id: true, displayId: true, email: true, name: true } },
+        target: { select: { name: true } },
       },
     }),
     prisma.comment.findMany({
@@ -24,7 +25,7 @@ export async function GET(request: Request) {
       orderBy: { createdAt: "desc" },
       take: 50,
       include: {
-        author: { select: { id: true, nickname: true, email: true, name: true } },
+        author: { select: { id: true, displayId: true, email: true, name: true } },
         post: { select: { id: true, title: true } },
       },
     }),
@@ -36,7 +37,7 @@ export async function GET(request: Request) {
       id: post.id,
       title: post.title,
       content: post.content,
-      targetName: post.targetName,
+      targetName: post.target.name,
       sarcasmScore: post.sarcasmScore,
       aggression: post.aggression,
       aiReport: post.aiReport,
