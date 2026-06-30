@@ -28,7 +28,7 @@ async function ensureUniqueDisplayId() {
 }
 
 async function getUserColumns() {
-  const columns = await prisma.$queryRaw<{ column_name: string }[]>`
+  const columns = await prisma.$queryRaw`
     SELECT column_name FROM information_schema.columns
     WHERE table_name = 'User' AND column_name IN ('nickname', 'displayId', 'name')
   `;
@@ -36,7 +36,7 @@ async function getUserColumns() {
 }
 
 async function getPostColumns() {
-  const columns = await prisma.$queryRaw<{ column_name: string }[]>`
+  const columns = await prisma.$queryRaw`
     SELECT column_name FROM information_schema.columns
     WHERE table_name = 'Post' AND column_name IN ('targetName', 'targetUserId')
   `;
@@ -50,11 +50,8 @@ async function migrateUsers(colSet) {
 
   const hasNickname = colSet.has("nickname");
   const users = hasNickname
-    ? await prisma.$queryRaw<
-        { id: string; name: string; nickname: string | null; displayId: string | null }[]
-      >`SELECT id, name, nickname, "displayId" FROM "User"`
-    : await prisma.$queryRaw<{ id: string; name: string; displayId: string | null }[]>`
-        SELECT id, name, "displayId" FROM "User"`;
+    ? await prisma.$queryRaw`SELECT id, name, nickname, "displayId" FROM "User"`
+    : await prisma.$queryRaw`SELECT id, name, "displayId" FROM "User"`;
 
   for (const user of users) {
     const nickname = "nickname" in user ? user.nickname : null;
@@ -78,13 +75,11 @@ async function migratePosts(postColSet) {
     return;
   }
 
-  const posts = await prisma.$queryRaw<{ id: string; targetName: string }[]>`
+  const posts = await prisma.$queryRaw`
     SELECT id, "targetName" FROM "Post" WHERE "targetName" IS NOT NULL
   `;
 
-  const allUsers = await prisma.$queryRaw<{ id: string; name: string }[]>`
-    SELECT id, name FROM "User"
-  `;
+  const allUsers = await prisma.$queryRaw`SELECT id, name FROM "User"`;
 
   for (const post of posts) {
     const normalized = post.targetName.trim().replace(/\s+/g, "");
