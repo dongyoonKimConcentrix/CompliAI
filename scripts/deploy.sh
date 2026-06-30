@@ -32,8 +32,8 @@ fi
 echo "==> Docker Hub에서 이미지 pull"
 $COMPOSE pull
 
-echo "==> Prisma 스키마 반영 (migrate)"
-$COMPOSE --profile migrate run --rm migrate
+echo "==> DB 마이그레이션"
+bash scripts/migrate-db.sh
 
 echo "==> 컨테이너 시작"
 $COMPOSE up -d

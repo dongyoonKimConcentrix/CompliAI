@@ -33,7 +33,7 @@ services:
     # VM git pull 후 최신 schema.prisma 사용 (Hub 이미지에 구 스키마가 있어도 drop 방지)
     volumes:
       - ./web/prisma:/app/prisma:ro
-    command: ["npx", "prisma", "db", "push", "--skip-generate"]
+    command: ["npx", "prisma", "db", "push", "--skip-generate", "--accept-data-loss"]
     depends_on:
       db:
         condition: service_healthy

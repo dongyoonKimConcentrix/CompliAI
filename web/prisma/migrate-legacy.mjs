@@ -1,6 +1,6 @@
 /**
  * 기존 DB → 새 스키마 마이그레이션 (db push 전 실행)
- * node prisma/migrate-legacy.mjs && npx prisma db push --accept-data-loss
+ * idempotent — 이미 마이그레이션된 DB에서는 no-op에 가깝게 동작합니다.
  */
 import { PrismaClient } from "@prisma/client";
 
@@ -27,23 +27,38 @@ async function ensureUniqueDisplayId() {
   throw new Error("displayId 생성 실패");
 }
 
-async function main() {
-  const columns = await prisma.$queryRaw`
+async function getUserColumns() {
+  const columns = await prisma.$queryRaw<{ column_name: string }[]>`
     SELECT column_name FROM information_schema.columns
     WHERE table_name = 'User' AND column_name IN ('nickname', 'displayId', 'name')
   `;
-  const colSet = new Set(columns.map((c) => c.column_name));
+  return new Set(columns.map((c) => c.column_name));
+}
 
+async function getPostColumns() {
+  const columns = await prisma.$queryRaw<{ column_name: string }[]>`
+    SELECT column_name FROM information_schema.columns
+    WHERE table_name = 'Post' AND column_name IN ('targetName', 'targetUserId')
+  `;
+  return new Set(columns.map((c) => c.column_name));
+}
+
+async function migrateUsers(colSet) {
   if (!colSet.has("displayId")) {
     await prisma.$executeRaw`ALTER TABLE "User" ADD COLUMN IF NOT EXISTS "displayId" TEXT`;
   }
 
-  const users = await prisma.$queryRaw`
-    SELECT id, name, nickname, "displayId" FROM "User"
-  `;
+  const hasNickname = colSet.has("nickname");
+  const users = hasNickname
+    ? await prisma.$queryRaw<
+        { id: string; name: string; nickname: string | null; displayId: string | null }[]
+      >`SELECT id, name, nickname, "displayId" FROM "User"`
+    : await prisma.$queryRaw<{ id: string; name: string; displayId: string | null }[]>`
+        SELECT id, name, "displayId" FROM "User"`;
 
   for (const user of users) {
-    const name = user.name?.trim() || user.nickname?.trim() || "이름없음";
+    const nickname = "nickname" in user ? user.nickname : null;
+    const name = user.name?.trim() || nickname?.trim() || "이름없음";
     const displayId = user.displayId || (await ensureUniqueDisplayId());
 
     await prisma.$executeRaw`
@@ -52,39 +67,56 @@ async function main() {
       WHERE id = ${user.id}
     `;
   }
+}
 
-  const postCols = await prisma.$queryRaw`
-    SELECT column_name FROM information_schema.columns
-    WHERE table_name = 'Post' AND column_name IN ('targetName', 'targetUserId')
-  `;
-  const postColSet = new Set(postCols.map((c) => c.column_name));
-
-  if (postColSet.has("targetName") && !postColSet.has("targetUserId")) {
+async function migratePosts(postColSet) {
+  if (!postColSet.has("targetUserId")) {
     await prisma.$executeRaw`ALTER TABLE "Post" ADD COLUMN IF NOT EXISTS "targetUserId" TEXT`;
+  }
 
-    const posts = await prisma.$queryRaw`
-      SELECT id, "targetName" FROM "Post" WHERE "targetName" IS NOT NULL
-    `;
+  if (!postColSet.has("targetName")) {
+    return;
+  }
 
-    const allUsers = await prisma.$queryRaw`SELECT id, name FROM "User"`;
+  const posts = await prisma.$queryRaw<{ id: string; targetName: string }[]>`
+    SELECT id, "targetName" FROM "Post" WHERE "targetName" IS NOT NULL
+  `;
 
-    for (const post of posts) {
-      const normalized = post.targetName.trim().replace(/\s+/g, "");
-      const match = allUsers.find((u) => {
-        const n = u.name.trim().replace(/\s+/g, "");
-        return n === normalized || n.includes(normalized) || normalized.includes(n);
-      });
+  const allUsers = await prisma.$queryRaw<{ id: string; name: string }[]>`
+    SELECT id, name FROM "User"
+  `;
 
-      if (match) {
-        await prisma.$executeRaw`
-          UPDATE "Post" SET "targetUserId" = ${match.id} WHERE id = ${post.id}
-        `;
-      } else {
-        await prisma.$executeRaw`DELETE FROM "Post" WHERE id = ${post.id}`;
-      }
+  for (const post of posts) {
+    const normalized = post.targetName.trim().replace(/\s+/g, "");
+    const match = allUsers.find((u) => {
+      const n = u.name.trim().replace(/\s+/g, "");
+      return n === normalized || n.includes(normalized) || normalized.includes(n);
+    });
+
+    if (match) {
+      await prisma.$executeRaw`
+        UPDATE "Post" SET "targetUserId" = ${match.id} WHERE id = ${post.id}
+      `;
+    } else {
+      await prisma.$executeRaw`DELETE FROM "Post" WHERE id = ${post.id}`;
     }
+  }
 
-    await prisma.$executeRaw`DELETE FROM "Post" WHERE "targetUserId" IS NULL`;
+  await prisma.$executeRaw`DELETE FROM "Post" WHERE "targetUserId" IS NULL`;
+}
+
+async function main() {
+  const userCols = await getUserColumns();
+  if (userCols.size === 0) {
+    console.log("User table not found — skipping legacy migration.");
+    return;
+  }
+
+  await migrateUsers(userCols);
+
+  const postCols = await getPostColumns();
+  if (postCols.size > 0) {
+    await migratePosts(postCols);
   }
 
   console.log("Legacy migration complete.");
