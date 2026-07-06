@@ -107,6 +107,50 @@ export async function sendVerificationEmail(
   });
 }
 
+export async function sendPasswordResetEmail(
+  to: string,
+  name: string,
+  resetUrl: string
+): Promise<void> {
+  const shared = getSharedTransport();
+
+  if (!shared) {
+    throw new Error("SMTP 설정이 없습니다.");
+  }
+
+  const { transport, config } = shared;
+
+  await transport.sendMail({
+    from: `"CompliAI" <${config.from}>`,
+    to,
+    subject: "[CompliAI] 비밀번호 재설정",
+    text: [
+      `${name}님, 안녕하세요.`,
+      "",
+      "아래 링크를 클릭해 비밀번호를 재설정해 주세요.",
+      resetUrl,
+      "",
+      "링크는 1시간 동안 유효합니다.",
+      "본인이 요청하지 않았다면 이 메일을 무시해 주세요.",
+    ].join("\n"),
+    html: `
+      <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 24px;">
+        <h2 style="color: #6366f1;">CompliAI 비밀번호 재설정</h2>
+        <p>${name}님, 안녕하세요.</p>
+        <p>아래 버튼을 클릭해 새 비밀번호를 설정해 주세요.</p>
+        <p style="margin: 32px 0;">
+          <a href="${resetUrl}" style="background:#6366f1;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;display:inline-block;">
+            비밀번호 재설정하기
+          </a>
+        </p>
+        <p style="color:#666;font-size:14px;">버튼이 동작하지 않으면 아래 링크를 복사해 브라우저에 붙여넣으세요.</p>
+        <p style="color:#666;font-size:14px;word-break:break-all;">${resetUrl}</p>
+        <p style="color:#999;font-size:12px;">링크는 1시간 동안 유효합니다.</p>
+      </div>
+    `,
+  });
+}
+
 export type MonthlyWinnerMailPayload = {
   to: string;
   name: string;

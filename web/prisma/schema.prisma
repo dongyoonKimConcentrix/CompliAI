@@ -28,6 +28,8 @@ model User {
   profileImage      String?
   emailVerified     DateTime?
   verificationToken String?   @unique
+  passwordResetToken          String?   @unique
+  passwordResetTokenExpiresAt DateTime?
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

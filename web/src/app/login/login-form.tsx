@@ -124,6 +124,11 @@ export default function LoginForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+          <div className="text-right">
+            <Link href="/forgot-password" className="link link-neutral text-sm">
+              비밀번호를 잊으셨나요?
+            </Link>
+          </div>
           {error && <p className="text-base-content text-sm">{error}</p>}
           {info && <p className="text-base-content/70 text-sm break-all">{info}</p>}
           <button type="submit" className="btn btn-primary w-full" disabled={loading}>
