@@ -12,6 +12,7 @@ from app.schemas import AnalyzeRequest, AnalyzeResponse, EvaluationResult
 from app.services.settings import get_sarcasm_threshold
 from app.services.prompts import (
     ANALYSIS_SYSTEM_PROMPT,
+    ANALYSIS_USER_TEMPLATE,
     CONTRAST_PATTERNS,
     DEADLINE_WORDS,
     FALLBACK_AGGRESSION_THRESHOLD,
@@ -160,12 +161,13 @@ def _parse_openai_report(raw: dict) -> dict | None:
 def _openai_analysis(client: OpenAI, text: str) -> dict | None:
     try:
         prepared_text = prepare_text_for_analysis(text)
+        user_content = ANALYSIS_USER_TEMPLATE.format(text=prepared_text)
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             response_format={"type": "json_object"},
             messages=[
                 {"role": "system", "content": ANALYSIS_SYSTEM_PROMPT},
-                {"role": "user", "content": prepared_text},
+                {"role": "user", "content": user_content},
             ],
             temperature=0.1,
         )

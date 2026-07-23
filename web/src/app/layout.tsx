@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { getServerSession } from "next-auth";
-import "@fortawesome/fontawesome-free/css/all.min.css";
 import "./globals.css";
 import { authOptions } from "@/lib/auth";
 import { Providers } from "@/components/providers";

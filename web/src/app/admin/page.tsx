@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { FormEvent, useEffect, useState } from "react";
 import { Icon } from "@/components/icon";
 import { NegativeNuanceScore } from "@/components/negative-nuance-score";
@@ -106,7 +107,7 @@ export default function AdminPage() {
             <Icon name="fa-solid fa-shield-halved" />
             관리자
           </h1>
-          <p className="text-base-content/60 mt-1">AI 임계치 · 월간 1등 · 검토 대기열</p>
+          <p className="text-base-content/60 mt-1">AI 임계치 · 월간 1등 · 회원 · 검토 대기열</p>
         </div>
         <Link href="/board" className="btn btn-outline btn-sm gap-2 w-fit">
           <Icon name="fa-solid fa-arrow-left" />
@@ -117,6 +118,12 @@ export default function AdminPage() {
       <div className="card bg-base-100 shadow-apple">
         <div className="card-body">
           <CurrentMonthLeaderPanel />
+        </div>
+      </div>
+
+      <div className="card bg-base-100 shadow-apple">
+        <div className="card-body">
+          <AdminMembersPanel />
         </div>
       </div>
 
@@ -276,6 +283,154 @@ type CurrentMonthRanking = {
   }>;
   scoring: { formula: string };
 };
+
+type AdminMember = {
+  id: string;
+  email: string;
+  name: string;
+  displayId: string;
+  role: "USER" | "ADMIN";
+  emailVerified: string | null;
+  createdAt: string;
+  _count: { posts: number; comments: number };
+};
+
+function AdminMembersPanel() {
+  const { data: session } = useSession();
+  const queryClient = useQueryClient();
+  const openModal = useUIStore((s) => s.openModal);
+  const [query, setQuery] = useState("");
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/users");
+      if (!res.ok) throw new Error("회원 목록 조회 실패");
+      return res.json() as Promise<{ users: AdminMember[]; total: number }>;
+    },
+  });
+
+  const deleteUser = useMutation({
+    mutationFn: async (userId: string) => {
+      const res = await fetch("/api/admin/users", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "삭제 실패");
+      return json as { message: string };
+    },
+    onSuccess: (json) => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      openModal(json.message);
+    },
+    onError: (err: Error) => openModal(err.message),
+  });
+
+  const filtered = (data?.users ?? []).filter((user) => {
+    const q = query.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      user.name.toLowerCase().includes(q) ||
+      user.email.toLowerCase().includes(q) ||
+      user.displayId.toLowerCase().includes(q)
+    );
+  });
+
+  return (
+    <>
+      <h2 className="card-title gap-2">
+        <Icon name="fa-solid fa-users" />
+        가입 회원
+        {data && <span className="badge badge-neutral badge-sm">{data.total}명</span>}
+      </h2>
+      <p className="text-sm text-base-content/60">
+        가입된 회원을 조회하고 계정을 삭제할 수 있습니다. 관련 게시글·댓글·좋아요·신고도 함께 삭제됩니다.
+      </p>
+
+      <div className="form-control mt-2">
+        <input
+          className="input input-bordered input-sm w-full sm:max-w-xs"
+          placeholder="이름 · 이메일 · 표시 ID 검색"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <span className="loading loading-spinner" />
+        </div>
+      ) : filtered.length === 0 ? (
+        <p className="text-center text-base-content/50 py-6">회원이 없습니다.</p>
+      ) : (
+        <div className="overflow-x-auto mt-3">
+          <table className="table table-sm">
+            <thead>
+              <tr>
+                <th>이름</th>
+                <th>이메일</th>
+                <th className="hidden sm:table-cell">표시 ID</th>
+                <th>역할</th>
+                <th className="hidden md:table-cell">인증</th>
+                <th className="hidden lg:table-cell">활동</th>
+                <th className="hidden md:table-cell">가입일</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((user) => (
+                <tr key={user.id}>
+                  <td className="font-medium whitespace-nowrap">{user.name}</td>
+                  <td className="text-xs break-all max-w-[10rem] sm:max-w-none">{user.email}</td>
+                  <td className="hidden sm:table-cell font-mono text-xs">{user.displayId}</td>
+                  <td>
+                    <span
+                      className={`badge badge-sm ${
+                        user.role === "ADMIN" ? "badge-neutral" : "badge-ghost"
+                      }`}
+                    >
+                      {user.role === "ADMIN" ? "관리자" : "회원"}
+                    </span>
+                  </td>
+                  <td className="hidden md:table-cell text-xs">
+                    {user.emailVerified ? "완료" : "미인증"}
+                  </td>
+                  <td className="hidden lg:table-cell text-xs text-base-content/60 whitespace-nowrap">
+                    글 {user._count.posts} · 댓글 {user._count.comments}
+                  </td>
+                  <td className="hidden md:table-cell text-xs text-base-content/50 whitespace-nowrap">
+                    {new Date(user.createdAt).toLocaleDateString("ko-KR")}
+                  </td>
+                  <td>
+                    {user.id === session?.user?.id ? (
+                      <span className="text-xs text-base-content/40">본인</span>
+                    ) : (
+                      <button
+                        className="btn btn-ghost btn-xs gap-1 text-error"
+                        disabled={deleteUser.isPending}
+                        onClick={() => {
+                          const ok = window.confirm(
+                            `${user.name}(${user.email}) 계정을 삭제할까요?\n게시글·댓글 등 관련 데이터가 함께 삭제됩니다.`
+                          );
+                          if (ok) deleteUser.mutate(user.id);
+                        }}
+                      >
+                        <Icon name="fa-solid fa-trash" />
+                        삭제
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </>
+  );
+}
 
 function CurrentMonthLeaderPanel() {
   const { data, isLoading } = useQuery({
