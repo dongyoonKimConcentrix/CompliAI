@@ -5,12 +5,25 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { UserRole } from "@prisma/client";
 import { useParams, useRouter } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useMemo, useState } from "react";
 import { useUIStore } from "@/store/ui-store";
 import { getAuthorDisplayName } from "@/lib/author-display";
 import { NegativeNuanceScore } from "@/components/negative-nuance-score";
 import { Icon } from "@/components/icon";
 import { PostReportButton } from "@/components/post-report-button";
+
+type CommentAuthor = { id: string; displayId: string; email: string };
+
+type CommentItem = {
+  id: string;
+  content: string;
+  isBlinded: boolean;
+  sarcasmScore: number;
+  authorId: string;
+  parentId: string | null;
+  createdAt: string;
+  author: CommentAuthor;
+};
 
 type PostDetail = {
   id: string;
@@ -25,17 +38,19 @@ type PostDetail = {
   createdAt: string;
   author: { id: string; displayId: string; email: string };
   target: { id: string; name: string };
-  comments: {
-    id: string;
-    content: string;
-    isBlinded: boolean;
-    sarcasmScore: number;
-    authorId: string;
-    createdAt: string;
-    author: { id: string; displayId: string; email: string };
-  }[];
+  comments: CommentItem[];
   _count: { likes: number; reports: number };
 };
+
+type CommentThread = CommentItem & { replies: CommentItem[] };
+
+function buildCommentThreads(comments: CommentItem[]): CommentThread[] {
+  const roots = comments.filter((c) => !c.parentId);
+  return roots.map((root) => ({
+    ...root,
+    replies: comments.filter((c) => c.parentId === root.id),
+  }));
+}
 
 export default function PostDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -44,6 +59,8 @@ export default function PostDetailPage() {
   const queryClient = useQueryClient();
   const openModal = useUIStore((s) => s.openModal);
   const [comment, setComment] = useState("");
+  const [replyToId, setReplyToId] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
 
   const { data, isLoading } = useQuery({
     queryKey: ["post", id],
@@ -73,21 +90,26 @@ export default function PostDetailPage() {
   });
 
   const commentMutation = useMutation({
-    mutationFn: async (content: string) => {
+    mutationFn: async ({ content, parentId }: { content: string; parentId?: string | null }) => {
       const res = await fetch(`/api/posts/${id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content }),
+        body: JSON.stringify({ content, parentId: parentId ?? null }),
       });
       const json = await res.json();
       if (!res.ok) throw new Error(json.error);
       return json;
     },
-    onMutate: async (content) => {
+    onMutate: async ({ content, parentId }) => {
       await queryClient.cancelQueries({ queryKey: ["post", id] });
       const prev = queryClient.getQueryData(["post", id]);
       queryClient.setQueryData(["post", id], (old: { post: PostDetail } | undefined) => {
         if (!old) return old;
+        let resolvedParentId: string | null = null;
+        if (parentId) {
+          const parent = old.post.comments.find((c) => c.id === parentId);
+          resolvedParentId = parent?.parentId ?? parentId;
+        }
         return {
           post: {
             ...old.post,
@@ -99,6 +121,7 @@ export default function PostDetailPage() {
                 isBlinded: false,
                 sarcasmScore: 0,
                 authorId: session?.user?.id ?? "",
+                parentId: resolvedParentId,
                 createdAt: new Date().toISOString(),
                 author: {
                   id: session?.user?.id ?? "",
@@ -110,7 +133,12 @@ export default function PostDetailPage() {
           },
         };
       });
-      setComment("");
+      if (parentId) {
+        setReplyContent("");
+        setReplyToId(null);
+      } else {
+        setComment("");
+      }
       return { prev };
     },
     onError: (err: Error, _v, ctx) => {
@@ -133,6 +161,11 @@ export default function PostDetailPage() {
     },
   });
 
+  const threads = useMemo(
+    () => (data ? buildCommentThreads(data.post.comments) : []),
+    [data]
+  );
+
   if (isLoading || !data) {
     return (
       <div className="flex justify-center py-12">
@@ -149,6 +182,87 @@ export default function PostDetailPage() {
     post.sarcasmScore,
     post._count.reports
   );
+
+  const renderComment = (c: CommentItem, isReply = false) => {
+    const commentAuthorName = getAuthorDisplayName(c.author, c.sarcasmScore);
+    return (
+      <div
+        key={c.id}
+        className={`bg-base-200 rounded-lg p-3 ${isReply ? "ml-4 sm:ml-8 border-l-2 border-base-300" : ""}`}
+      >
+        <p className="break-words">{c.content}</p>
+        <div className="flex flex-wrap justify-between items-center gap-2 mt-1">
+          <span className="text-xs text-base-content/50 font-mono">
+            {commentAuthorName} · {new Date(c.createdAt).toLocaleString("ko-KR")}
+          </span>
+          <div className="flex gap-1">
+            {session && (
+              <button
+                className="btn btn-xs btn-ghost gap-1"
+                onClick={() => {
+                  setReplyToId((prev) => (prev === c.id ? null : c.id));
+                  setReplyContent("");
+                }}
+              >
+                <Icon name="fa-solid fa-reply" />
+                답글
+              </button>
+            )}
+            {session?.user?.id === c.authorId && (
+              <button
+                className="btn btn-xs btn-ghost gap-1"
+                onClick={async () => {
+                  await fetch(`/api/comments/${c.id}`, { method: "DELETE" });
+                  queryClient.invalidateQueries({ queryKey: ["post", id] });
+                }}
+              >
+                <Icon name="fa-solid fa-trash" />
+                삭제
+              </button>
+            )}
+          </div>
+        </div>
+        {session && replyToId === c.id && (
+          <form
+            onSubmit={(e: FormEvent) => {
+              e.preventDefault();
+              if (replyContent.trim()) {
+                commentMutation.mutate({ content: replyContent, parentId: c.id });
+              }
+            }}
+            className="flex flex-col sm:flex-row gap-2 mt-3"
+          >
+            <input
+              className="input input-bordered input-sm w-full sm:flex-1"
+              placeholder="답글을 입력해 주세요"
+              value={replyContent}
+              onChange={(e) => setReplyContent(e.target.value)}
+              autoFocus
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                onClick={() => {
+                  setReplyToId(null);
+                  setReplyContent("");
+                }}
+              >
+                취소
+              </button>
+              <button
+                type="submit"
+                className="btn btn-sm btn-primary"
+                disabled={commentMutation.isPending}
+              >
+                등록
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -242,7 +356,7 @@ export default function PostDetailPage() {
             <form
               onSubmit={(e: FormEvent) => {
                 e.preventDefault();
-                if (comment.trim()) commentMutation.mutate(comment);
+                if (comment.trim()) commentMutation.mutate({ content: comment });
               }}
               className="flex flex-col sm:flex-row gap-2"
             >
@@ -258,31 +372,12 @@ export default function PostDetailPage() {
             </form>
           )}
           <div className="space-y-3 mt-4">
-            {post.comments.map((c) => {
-              const commentAuthorName = getAuthorDisplayName(c.author, c.sarcasmScore);
-              return (
-              <div key={c.id} className="bg-base-200 rounded-lg p-3">
-                <p>{c.content}</p>
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-base-content/50 font-mono">
-                    {commentAuthorName} · {new Date(c.createdAt).toLocaleString("ko-KR")}
-                  </span>
-                  {session?.user?.id === c.authorId && (
-                    <button
-                      className="btn btn-xs btn-ghost gap-1"
-                      onClick={async () => {
-                        await fetch(`/api/comments/${c.id}`, { method: "DELETE" });
-                        queryClient.invalidateQueries({ queryKey: ["post", id] });
-                      }}
-                    >
-                      <Icon name="fa-solid fa-trash" />
-                      삭제
-                    </button>
-                  )}
-                </div>
+            {threads.map((thread) => (
+              <div key={thread.id} className="space-y-2">
+                {renderComment(thread)}
+                {thread.replies.map((reply) => renderComment(reply, true))}
               </div>
-            );
-            })}
+            ))}
           </div>
         </div>
       </div>

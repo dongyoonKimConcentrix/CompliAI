@@ -27,7 +27,7 @@ export async function POST(request: Request, { params }: Params) {
   if (error) return error;
 
   const { id: postId } = await params;
-  const { content } = await request.json();
+  const { content, parentId } = await request.json();
 
   if (!content?.trim()) {
     return NextResponse.json({ error: "댓글 내용을 입력해 주세요." }, { status: 400 });
@@ -35,6 +35,16 @@ export async function POST(request: Request, { params }: Params) {
 
   const post = await prisma.post.findUnique({ where: { id: postId } });
   if (!post) return NextResponse.json({ error: "게시글을 찾을 수 없습니다." }, { status: 404 });
+
+  let resolvedParentId: string | null = null;
+  if (parentId) {
+    const parent = await prisma.comment.findUnique({ where: { id: parentId } });
+    if (!parent || parent.postId !== postId) {
+      return NextResponse.json({ error: "부모 댓글을 찾을 수 없습니다." }, { status: 400 });
+    }
+    // 대댓글의 대댓글은 최상위 부모에 붙여 1단 깊이로 유지
+    resolvedParentId = parent.parentId ?? parent.id;
+  }
 
   let analysis;
   try {
@@ -59,6 +69,7 @@ export async function POST(request: Request, { params }: Params) {
     data: {
       content,
       postId,
+      parentId: resolvedParentId,
       authorId: session!.user.id,
       sarcasmScore: analysis.sarcasm_score,
       aggression: analysis.aggression,
