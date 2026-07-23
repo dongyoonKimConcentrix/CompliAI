@@ -106,12 +106,18 @@ export default function AdminPage() {
             <Icon name="fa-solid fa-shield-halved" />
             관리자
           </h1>
-          <p className="text-base-content/60 mt-1">AI 임계치 · 검토 대기열</p>
+          <p className="text-base-content/60 mt-1">AI 임계치 · 월간 1등 · 검토 대기열</p>
         </div>
         <Link href="/board" className="btn btn-outline btn-sm gap-2 w-fit">
           <Icon name="fa-solid fa-arrow-left" />
           게시판
         </Link>
+      </div>
+
+      <div className="card bg-base-100 shadow-apple">
+        <div className="card-body">
+          <CurrentMonthLeaderPanel />
+        </div>
       </div>
 
       <div className="card bg-base-100 shadow-apple">
@@ -257,6 +263,110 @@ type MonthlyWinnerStatus = {
     triggeredBy: string;
   } | null;
 };
+
+type CurrentMonthRanking = {
+  period: { year: number; month: number; label: string };
+  leaders: Array<{
+    rank: number;
+    userId: string;
+    name: string;
+    praiseCount: number;
+    likeCount: number;
+    score: number;
+  }>;
+  scoring: { formula: string };
+};
+
+function CurrentMonthLeaderPanel() {
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin-current-month-leader"],
+    queryFn: async () => {
+      const res = await fetch("/api/rankings/monthly");
+      if (!res.ok) throw new Error("월간 랭킹 조회 실패");
+      return res.json() as Promise<CurrentMonthRanking>;
+    },
+  });
+
+  const leader = data?.leaders[0] ?? null;
+  const runnersUp = data?.leaders.slice(1, 3) ?? [];
+
+  return (
+    <>
+      <h2 className="card-title gap-2">
+        <Icon name="fa-solid fa-trophy" />
+        이번 달 칭찬 점수 1등
+      </h2>
+      <p className="text-sm text-base-content/60">
+        {data?.period.label ?? "이번 달"} 기준 · 긍정 칭찬만 집계
+        {data?.scoring.formula ? ` (${data.scoring.formula})` : ""}
+      </p>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <span className="loading loading-spinner" />
+        </div>
+      ) : !leader ? (
+        <p className="text-center text-base-content/50 py-6">
+          아직 집계된 칭찬이 없습니다.
+        </p>
+      ) : (
+        <div className="mt-2 space-y-4">
+          <div className="rounded-xl border border-base-300 bg-base-200/50 p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-base-content text-base-100">
+                <Icon name="fa-solid fa-trophy" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs text-base-content/50">1위</p>
+                <p className="text-xl font-bold truncate">{leader.name}</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-4 sm:ml-auto text-sm">
+              <div>
+                <p className="text-xs text-base-content/50">점수</p>
+                <p className="font-semibold">{leader.score}점</p>
+              </div>
+              <div>
+                <p className="text-xs text-base-content/50">칭찬 건수</p>
+                <p className="font-semibold">{leader.praiseCount}건</p>
+              </div>
+              <div>
+                <p className="text-xs text-base-content/50">좋아요</p>
+                <p className="font-semibold">{leader.likeCount}개</p>
+              </div>
+            </div>
+          </div>
+
+          {runnersUp.length > 0 && (
+            <div className="text-sm space-y-2">
+              <p className="text-base-content/50">참고 · 2~3위</p>
+              <ul className="space-y-1">
+                {runnersUp.map((entry) => (
+                  <li
+                    key={entry.userId}
+                    className="flex justify-between gap-2 border-b border-base-300/60 py-1.5 last:border-0"
+                  >
+                    <span>
+                      {entry.rank}위 · {entry.name}
+                    </span>
+                    <span className="text-base-content/60 shrink-0">
+                      {entry.score}점
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <Link href="/rankings" className="btn btn-ghost btn-sm gap-2 w-fit">
+            <Icon name="fa-solid fa-table-columns" />
+            전체 랭킹 보기
+          </Link>
+        </div>
+      )}
+    </>
+  );
+}
 
 function MonthlyWinnerEmailPanel() {
   const queryClient = useQueryClient();
