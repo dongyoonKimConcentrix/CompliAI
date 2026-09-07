@@ -1,8 +1,13 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth";
 import { Icon } from "@/components/icon";
 import { MonthlyRankingPreview } from "@/components/monthly-ranking-preview";
+import { authOptions } from "@/lib/auth";
 
-export default function HomePage() {
+export default async function HomePage() {
+  const session = await getServerSession(authOptions);
+  const startHref = session?.user ? "/board" : "/login";
+
   return (
     <div>
       <div className="hero min-h-[50vh] sm:min-h-[60vh] bg-base-100 rounded-xl sm:rounded-2xl shadow-apple">
@@ -22,7 +27,7 @@ export default function HomePage() {
                 <Icon name="fa-solid fa-trophy" />
                 월별 랭킹
               </Link>
-              <Link href="/register" className="btn btn-ghost">
+              <Link href={startHref} className="btn btn-ghost">
                 시작하기
               </Link>
             </div>
