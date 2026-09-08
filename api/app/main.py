@@ -14,7 +14,7 @@ from app.routers.upload import cron_router, files_router, upload_router
 from app.routers.users import router as users_router
 
 app = FastAPI(
-    title="CompliAI REST API",
+    title="CompliAI API",
     description=(
         "CompliAI 백엔드 REST API입니다. 인증, 게시글/댓글 CRUD, 비즈니스 로직, "
         "AI 뉘앙스 분석을 제공합니다. 프론트엔드(Next.js)는 이 API를 호출합니다."
