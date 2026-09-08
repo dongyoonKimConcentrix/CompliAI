@@ -1,30 +1,22 @@
 import { cookies } from "next/headers";
-import { jwtVerify } from "jose";
-import { TOKEN_COOKIE, type Session } from "@/lib/types";
+import { TOKEN_COOKIE, type Session, type SessionUser } from "@/lib/types";
 
-function secret() {
-  const value = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
-  if (!value) return null;
-  return new TextEncoder().encode(value);
+function apiOrigin() {
+  return (process.env.FASTAPI_INTERNAL_URL || "http://127.0.0.1:8000").replace(/\/$/, "");
 }
 
 export async function getServerSession(): Promise<Session | null> {
-  const key = secret();
-  if (!key) return null;
   const token = (await cookies()).get(TOKEN_COOKIE)?.value;
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, key);
-    const id = typeof payload.sub === "string" ? payload.sub : "";
-    if (!id) return null;
-    return {
-      user: {
-        id,
-        email: typeof payload.email === "string" ? payload.email : null,
-        name: typeof payload.name === "string" ? payload.name : null,
-        role: payload.role === "ADMIN" ? "ADMIN" : "USER",
-      },
-    };
+    const res = await fetch(`${apiOrigin()}/api/auth/session`, {
+      headers: { cookie: `${TOKEN_COOKIE}=${token}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { user?: SessionUser | null };
+    if (!json?.user?.id) return null;
+    return { user: json.user };
   } catch {
     return null;
   }

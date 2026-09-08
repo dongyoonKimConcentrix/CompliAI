@@ -2,11 +2,25 @@
 
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
+import { useSession } from "@/lib/auth-client";
 import { http } from "@/lib/http";
+
+function destinationFor(role: string | undefined, callbackUrl: string | null) {
+  const safeCallback =
+    callbackUrl && callbackUrl.startsWith("/") && !callbackUrl.startsWith("//") ? callbackUrl : null;
+  if (role === "ADMIN") {
+    return safeCallback?.startsWith("/admin") ? safeCallback : "/admin";
+  }
+  if (safeCallback && !safeCallback.startsWith("/admin")) {
+    return safeCallback;
+  }
+  return "/board";
+}
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
+  const { data: session, status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -17,6 +31,12 @@ export default function LoginForm() {
 
   const verified = searchParams.get("verified");
   const urlError = searchParams.get("error");
+  const callbackUrl = searchParams.get("callbackUrl");
+
+  useEffect(() => {
+    if (status !== "authenticated" || !session?.user) return;
+    window.location.replace(destinationFor(session.user.role, callbackUrl));
+  }, [status, session, callbackUrl]);
 
   const urlErrorMessage =
     urlError === "invalid_token"
@@ -38,19 +58,7 @@ export default function LoginForm() {
         password,
       });
       setLoading(false);
-
-      const callbackUrl = searchParams.get("callbackUrl");
-      const isAdmin = json.user?.role === "ADMIN";
-
-      let destination = "/board";
-      if (isAdmin) {
-        destination =
-          callbackUrl && callbackUrl.startsWith("/admin") ? callbackUrl : "/admin";
-      } else if (callbackUrl && callbackUrl.startsWith("/")) {
-        destination = callbackUrl;
-      }
-
-      window.location.href = destination;
+      window.location.replace(destinationFor(json.user?.role, callbackUrl));
     } catch (err) {
       setLoading(false);
       const message = err instanceof Error ? err.message : "";
@@ -87,6 +95,14 @@ export default function LoginForm() {
       setResending(false);
       setError(err instanceof Error ? err.message : "인증 메일 재발송에 실패했습니다.");
     }
+  }
+
+  if (status === "authenticated") {
+    return (
+      <div className="flex justify-center py-16">
+        <span className="loading loading-spinner loading-lg" />
+      </div>
+    );
   }
 
   return (

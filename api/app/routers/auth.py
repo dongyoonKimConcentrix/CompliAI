@@ -1,24 +1,20 @@
 from datetime import datetime
 
-from fastapi import APIRouter, HTTPException, Response
-from fastapi.responses import RedirectResponse
+from fastapi import APIRouter, HTTPException, Request
+from fastapi.responses import JSONResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from sqlmodel import select
 
 from app.config import get_settings
-from fastapi import APIRouter, Request
-from sqlmodel import select
-
 from app.deps import DBSession
-from app.models import User
-from app.security import TOKEN_COOKIE, decode_access_token
-from app.services.serialize import session_user
 from app.ids import generate_display_id, new_id, random_hex_token
 from app.mail import dispatch_password_reset_email, dispatch_verification_email
 from app.models import User, UserRole
 from app.security import (
+    TOKEN_COOKIE,
     clear_token_cookie,
     create_access_token,
+    decode_access_token,
     hash_password,
     set_token_cookie,
     verify_password,
@@ -114,7 +110,7 @@ def register(body: RegisterBody, session: DBSession):
 
 
 @router.post("/login")
-def login(body: LoginBody, response: Response, session: DBSession):
+def login(body: LoginBody, session: DBSession):
     email = body.email.strip().lower()
     user = session.exec(select(User).where(User.email == email)).first()
     if not user or not verify_password(body.password, user.passwordHash):
@@ -127,18 +123,22 @@ def login(body: LoginBody, response: Response, session: DBSession):
         name=user.name,
         role=user.role.value if hasattr(user.role, "value") else str(user.role),
     )
+    response = JSONResponse(
+        {
+            "access_token": token,
+            "token_type": "bearer",
+            "user": session_user(user),
+        }
+    )
     set_token_cookie(response, token)
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "user": session_user(user),
-    }
+    return response
 
 
 @router.post("/logout")
-def logout(response: Response):
+def logout():
+    response = JSONResponse({"message": "로그아웃되었습니다."})
     clear_token_cookie(response)
-    return {"message": "로그아웃되었습니다."}
+    return response
 
 
 @router.get("/session")

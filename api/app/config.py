@@ -1,18 +1,32 @@
 import os
 from functools import lru_cache
+from pathlib import Path
 
+from pydantic import AliasChoices, Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_API_DIR = Path(__file__).resolve().parent.parent
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(_API_DIR / ".env", _API_DIR.parent / ".env"),
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     database_url: str = "postgresql://myuser:mypassword@localhost:5432/compliai_db"
     openai_api_key: str = ""
     sarcasm_threshold: int = 70
-    jwt_secret: str = "change-me"
+    jwt_secret: str = Field(
+        default="change-me",
+        validation_alias=AliasChoices("JWT_SECRET", "NEXTAUTH_SECRET"),
+    )
     jwt_expire_days: int = 30
-    app_url: str = "http://localhost:3000"
+    app_url: str = Field(
+        default="http://localhost:3000",
+        validation_alias=AliasChoices("APP_URL", "NEXTAUTH_URL"),
+    )
     smtp_host: str = ""
     smtp_port: int = 587
     smtp_secure: bool = False
@@ -22,28 +36,20 @@ class Settings(BaseSettings):
     cron_secret: str = ""
     upload_dir: str = "uploads"
 
+    @model_validator(mode="after")
+    def normalize(self):
+        if not self.email_from:
+            object.__setattr__(self, "email_from", self.smtp_user)
+        object.__setattr__(self, "app_url", (self.app_url or "http://localhost:3000").rstrip("/"))
+        if not self.jwt_secret:
+            object.__setattr__(self, "jwt_secret", "change-me")
+        return self
+
 
 @lru_cache
 def get_settings() -> Settings:
-    jwt_secret = os.getenv("JWT_SECRET") or os.getenv("NEXTAUTH_SECRET") or "change-me"
-    smtp_secure = os.getenv("SMTP_SECURE", "false").lower() in ("1", "true", "yes")
-    return Settings(
-        database_url=os.getenv(
-            "DATABASE_URL", "postgresql://myuser:mypassword@localhost:5432/compliai_db"
-        ),
-        openai_api_key=os.getenv("OPENAI_API_KEY", ""),
-        sarcasm_threshold=int(os.getenv("SARCASM_THRESHOLD", "70")),
-        jwt_secret=jwt_secret,
-        jwt_expire_days=int(os.getenv("JWT_EXPIRE_DAYS", "30")),
-        app_url=(os.getenv("APP_URL") or os.getenv("NEXTAUTH_URL") or "http://localhost:3000").rstrip(
-            "/"
-        ),
-        smtp_host=os.getenv("SMTP_HOST", ""),
-        smtp_port=int(os.getenv("SMTP_PORT", "587")),
-        smtp_secure=smtp_secure,
-        smtp_user=os.getenv("SMTP_USER", ""),
-        smtp_password=os.getenv("SMTP_PASSWORD", ""),
-        email_from=os.getenv("EMAIL_FROM") or os.getenv("SMTP_USER") or "",
-        cron_secret=os.getenv("CRON_SECRET", ""),
-        upload_dir=os.getenv("UPLOAD_DIR", "uploads"),
-    )
+    jwt_secret = os.getenv("JWT_SECRET") or os.getenv("NEXTAUTH_SECRET")
+    loaded = Settings()
+    if jwt_secret:
+        object.__setattr__(loaded, "jwt_secret", jwt_secret)
+    return loaded

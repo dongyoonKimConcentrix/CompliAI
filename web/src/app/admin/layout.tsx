@@ -4,7 +4,7 @@ import { getServerSession } from "@/lib/session";
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getServerSession();
   if (!session?.user?.id) {
-    redirect("/login");
+    redirect("/login?callbackUrl=/admin");
   }
 
   if (session.user.role !== "ADMIN") {
