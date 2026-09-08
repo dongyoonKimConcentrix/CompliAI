@@ -4,14 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
 import { Icon } from "@/components/icon";
 import { DeleteAccountSection } from "@/components/delete-account-section";
+import { http } from "@/lib/http";
 
 export default function MyPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["mypage"],
     queryFn: async () => {
-      const res = await fetch("/api/mypage");
-      if (!res.ok) throw new Error("조회 실패");
-      return res.json();
+      const { data } = await http.get("/api/mypage");
+      return data;
     },
   });
 

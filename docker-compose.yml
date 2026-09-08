@@ -49,12 +49,25 @@ services:
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-myuser}:${POSTGRES_PASSWORD:-mypassword}@db:5432/${POSTGRES_DB:-compliai_db}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - JWT_SECRET=${JWT_SECRET:-${NEXTAUTH_SECRET}}
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+      - APP_URL=${NEXTAUTH_URL}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_SECURE=${SMTP_SECURE:-false}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - EMAIL_FROM=${EMAIL_FROM}
+      - CRON_SECRET=${CRON_SECRET}
+      - UPLOAD_DIR=/app/uploads
     ports:
       - "8000:8000"
+    volumes:
+      - uploads_data:/app/uploads
     deploy:
       resources:
         limits:
-          memory: 200M
+          memory: 250M
 
   web:
     image: dongyoonkimconcentrix/compliai-web:latest
@@ -67,20 +80,11 @@ services:
         condition: service_started
     environment:
       - FASTAPI_INTERNAL_URL=http://api:8000
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-myuser}:${POSTGRES_PASSWORD:-mypassword}@db:5432/${POSTGRES_DB:-compliai_db}
+      - JWT_SECRET=${JWT_SECRET:-${NEXTAUTH_SECRET}}
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
       - NEXTAUTH_URL=${NEXTAUTH_URL}
-      - SMTP_HOST=${SMTP_HOST}
-      - SMTP_PORT=${SMTP_PORT:-587}
-      - SMTP_SECURE=${SMTP_SECURE:-false}
-      - SMTP_USER=${SMTP_USER}
-      - SMTP_PASSWORD=${SMTP_PASSWORD}
-      - EMAIL_FROM=${EMAIL_FROM}
-      - CRON_SECRET=${CRON_SECRET}
     ports:
       - "80:3000"
-    volumes:
-      - uploads_data:/app/public/uploads
     deploy:
       resources:
         limits:

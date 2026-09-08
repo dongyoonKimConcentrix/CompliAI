@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useEffect, useState } from "react";
 import { PraiseTargetSelect } from "@/components/praise-target-select";
 import { useUIStore } from "@/store/ui-store";
+import { http } from "@/lib/http";
 
 export default function EditPostPage() {
   const { id } = useParams<{ id: string }>();
@@ -18,9 +19,8 @@ export default function EditPostPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["post", id],
     queryFn: async () => {
-      const res = await fetch(`/api/posts/${id}`);
-      if (!res.ok) throw new Error("조회 실패");
-      return res.json();
+      const { data } = await http.get(`/api/posts/${id}`);
+      return data;
     },
   });
 
@@ -35,14 +35,8 @@ export default function EditPostPage() {
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/posts/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, content, targetUserId }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
-      return json;
+      const { data } = await http.put(`/api/posts/${id}`, { title, content, targetUserId });
+      return data;
     },
     onSuccess: () => router.push(`/posts/${id}`),
     onError: (err: Error) => openModal(err.message),

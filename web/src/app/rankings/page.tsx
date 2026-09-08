@@ -9,6 +9,7 @@ import { MonthPicker } from "@/components/month-picker";
 import { MonthlyLeaderboard } from "@/components/monthly-leaderboard";
 import { getKSTNow } from "@/lib/praise-policy";
 import type { LeaderboardEntry } from "@/lib/praise-policy";
+import { http } from "@/lib/http";
 
 type RankingResponse = {
   period: { year: number; month: number; label: string; isCurrentMonth: boolean };
@@ -26,9 +27,10 @@ export default function RankingsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["rankings", year, month],
     queryFn: async () => {
-      const res = await fetch(`/api/rankings/monthly?year=${year}&month=${month}`);
-      if (!res.ok) throw new Error("랭킹 조회 실패");
-      return res.json() as Promise<RankingResponse>;
+      const { data } = await http.get<RankingResponse>("/api/rankings/monthly", {
+        params: { year, month },
+      });
+      return data;
     },
   });
 

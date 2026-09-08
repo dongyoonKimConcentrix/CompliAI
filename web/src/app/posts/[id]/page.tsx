@@ -2,8 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
-import { UserRole } from "@prisma/client";
+import { useSession } from "@/lib/auth-client";
 import { useParams, useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
 import { useUIStore } from "@/store/ui-store";
@@ -11,6 +10,7 @@ import { getAuthorDisplayName } from "@/lib/author-display";
 import { NegativeNuanceScore } from "@/components/negative-nuance-score";
 import { Icon } from "@/components/icon";
 import { PostReportButton } from "@/components/post-report-button";
+import { http } from "@/lib/http";
 
 type CommentAuthor = { id: string; displayId: string; email: string };
 
@@ -65,40 +65,39 @@ export default function PostDetailPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["post", id],
     queryFn: async () => {
-      const res = await fetch(`/api/posts/${id}`);
-      if (!res.ok) throw new Error("조회 실패");
-      return res.json() as Promise<{ post: PostDetail }>;
+      const { data } = await http.get<{ post: PostDetail }>(`/api/posts/${id}`);
+      return data;
     },
   });
 
   const { data: likeData } = useQuery({
     queryKey: ["like", id],
     queryFn: async () => {
-      const res = await fetch(`/api/posts/${id}/like`);
-      if (!res.ok) return { liked: false, count: 0 };
-      return res.json() as Promise<{ liked: boolean; count: number }>;
+      try {
+        const { data } = await http.get<{ liked: boolean; count: number }>(`/api/posts/${id}/like`);
+        return data;
+      } catch {
+        return { liked: false, count: 0 };
+      }
     },
     enabled: !!session,
   });
 
   const likeMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/posts/${id}/like`, { method: "POST" });
-      return res.json();
+      const { data } = await http.post(`/api/posts/${id}/like`);
+      return data;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["like", id] }),
   });
 
   const commentMutation = useMutation({
     mutationFn: async ({ content, parentId }: { content: string; parentId?: string | null }) => {
-      const res = await fetch(`/api/posts/${id}/comments`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, parentId: parentId ?? null }),
+      const { data } = await http.post(`/api/posts/${id}/comments`, {
+        content,
+        parentId: parentId ?? null,
       });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
-      return json;
+      return data;
     },
     onMutate: async ({ content, parentId }) => {
       await queryClient.cancelQueries({ queryKey: ["post", id] });
@@ -152,11 +151,10 @@ export default function PostDetailPage() {
 
   const deleteMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/posts/${id}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("삭제 실패");
+      await http.delete(`/api/posts/${id}`);
     },
     onSuccess: () => {
-      const admin = session?.user?.role === UserRole.ADMIN;
+      const admin = session?.user?.role === "ADMIN";
       router.push(admin ? "/admin" : "/board");
     },
   });
@@ -176,7 +174,7 @@ export default function PostDetailPage() {
 
   const post = data.post;
   const isOwner = session?.user?.id === post.authorId;
-  const isAdmin = session?.user?.role === UserRole.ADMIN;
+  const isAdmin = session?.user?.role === "ADMIN";
   const postAuthorName = getAuthorDisplayName(
     post.author,
     post.sarcasmScore,
@@ -212,7 +210,7 @@ export default function PostDetailPage() {
               <button
                 className="btn btn-xs btn-ghost gap-1"
                 onClick={async () => {
-                  await fetch(`/api/comments/${c.id}`, { method: "DELETE" });
+                  await http.delete(`/api/comments/${c.id}`);
                   queryClient.invalidateQueries({ queryKey: ["post", id] });
                 }}
               >

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { ALLOWED_EMAIL_ERROR, isAllowedCompanyEmail } from "@/lib/email-policy";
+import { http } from "@/lib/http";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -24,23 +25,19 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    const res = await fetch("/api/auth/forgot-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email }),
-    });
-
-    const json = await res.json();
-    setLoading(false);
-
-    if (!res.ok) {
-      setError(json.error || "요청에 실패했습니다.");
-      return;
-    }
-
-    setMessage(json.message);
-    if (json.resetUrl) {
-      setResetUrl(json.resetUrl);
+    try {
+      const { data: json } = await http.post<{ message: string; resetUrl?: string }>(
+        "/api/auth/forgot-password",
+        { email }
+      );
+      setLoading(false);
+      setMessage(json.message);
+      if (json.resetUrl) {
+        setResetUrl(json.resetUrl);
+      }
+    } catch (err) {
+      setLoading(false);
+      setError(err instanceof Error ? err.message : "요청에 실패했습니다.");
     }
   }
 

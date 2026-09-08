@@ -2,14 +2,14 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { DeleteAccountSection } from "@/components/delete-account-section";
+import { http } from "@/lib/http";
 
 export default function ProfilePage() {
   const { data, isLoading } = useQuery({
     queryKey: ["profile"],
     queryFn: async () => {
-      const res = await fetch("/api/profile");
-      if (!res.ok) throw new Error("조회 실패");
-      return res.json();
+      const { data } = await http.get("/api/profile");
+      return data;
     },
   });
 

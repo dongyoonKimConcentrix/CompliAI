@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { getServerSession } from "next-auth";
 import "./globals.css";
-import { authOptions } from "@/lib/auth";
 import { Providers } from "@/components/providers";
 import { Navbar } from "@/components/navbar";
 import { GlobalModal } from "@/components/global-modal";
@@ -17,13 +15,11 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ko" data-theme="apple">
       <body className="font-sans antialiased bg-base-200 text-base-content">
-        <Providers session={session}>
+        <Providers>
           <ThemeWrapper>
             <Navbar />
             <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 max-w-4xl w-full">{children}</main>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 import { Icon } from "@/components/icon";
+import { http } from "@/lib/http";
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -36,21 +37,15 @@ function ResetPasswordContent() {
 
     setLoading(true);
 
-    const res = await fetch("/api/auth/reset-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token, password }),
-    });
-
-    const json = await res.json();
-    setLoading(false);
-
-    if (!res.ok) {
-      setError(errorMessages[json.error as string] ?? json.error ?? errorMessages.reset_failed);
-      return;
+    try {
+      await http.post("/api/auth/reset-password", { token, password });
+      setLoading(false);
+      setDone(true);
+    } catch (err) {
+      setLoading(false);
+      const code = err instanceof Error ? err.message : "reset_failed";
+      setError(errorMessages[code] ?? code ?? errorMessages.reset_failed);
     }
-
-    setDone(true);
   }
 
   if (!token) {

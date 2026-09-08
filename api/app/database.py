@@ -1,4 +1,4 @@
-from sqlmodel import Session, SQLModel, create_engine
+from sqlmodel import Session, create_engine
 
 from app.config import get_settings
 
@@ -12,4 +12,5 @@ def get_session():
 
 
 def init_db():
-    SQLModel.metadata.create_all(engine)
+    # 스키마는 Prisma(web/prisma)가 관리합니다. 여기서는 테이블을 생성하지 않습니다.
+    return

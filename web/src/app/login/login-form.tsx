@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { getSession, signIn } from "next-auth/react";
-import { UserRole } from "@prisma/client";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { http } from "@/lib/http";
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
@@ -33,25 +32,15 @@ export default function LoginForm() {
     setInfo("");
     setShowResend(false);
 
-    const result = await signIn("credentials", {
-      email,
-      password,
-      redirect: false,
-    });
+    try {
+      const { data: json } = await http.post<{ user?: { role?: string } }>("/api/auth/login", {
+        email,
+        password,
+      });
+      setLoading(false);
 
-    setLoading(false);
-
-    if (result?.error) {
-      if (result.error === "EMAIL_NOT_VERIFIED") {
-        setError("이메일 인증이 완료되지 않았습니다. 메일함을 확인하거나 인증 메일을 재발송해 주세요.");
-        setShowResend(true);
-      } else {
-        setError("이메일 또는 비밀번호가 올바르지 않습니다.");
-      }
-    } else {
-      const session = await getSession();
       const callbackUrl = searchParams.get("callbackUrl");
-      const isAdmin = session?.user?.role === UserRole.ADMIN;
+      const isAdmin = json.user?.role === "ADMIN";
 
       let destination = "/board";
       if (isAdmin) {
@@ -62,6 +51,15 @@ export default function LoginForm() {
       }
 
       window.location.href = destination;
+    } catch (err) {
+      setLoading(false);
+      const message = err instanceof Error ? err.message : "";
+      if (message === "EMAIL_NOT_VERIFIED") {
+        setError("이메일 인증이 완료되지 않았습니다. 메일함을 확인하거나 인증 메일을 재발송해 주세요.");
+        setShowResend(true);
+      } else {
+        setError(message || "이메일 또는 비밀번호가 올바르지 않습니다.");
+      }
     }
   }
 
@@ -75,23 +73,19 @@ export default function LoginForm() {
     setError("");
     setInfo("");
 
-    const res = await fetch("/api/auth/resend-verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
-
-    const json = await res.json();
-    setResending(false);
-
-    if (!res.ok) {
-      setError(json.error || "인증 메일 재발송에 실패했습니다.");
-      return;
-    }
-
-    setInfo(json.message);
-    if (json.verifyUrl) {
-      setInfo(`${json.message} (개발용 링크: ${json.verifyUrl})`);
+    try {
+      const { data: json } = await http.post<{ message: string; verifyUrl?: string }>(
+        "/api/auth/resend-verification",
+        { email, password }
+      );
+      setResending(false);
+      setInfo(json.message);
+      if (json.verifyUrl) {
+        setInfo(`${json.message} (개발용 링크: ${json.verifyUrl})`);
+      }
+    } catch (err) {
+      setResending(false);
+      setError(err instanceof Error ? err.message : "인증 메일 재발송에 실패했습니다.");
     }
   }
 

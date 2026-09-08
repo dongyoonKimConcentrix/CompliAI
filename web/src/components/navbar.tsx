@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { signOut, useSession } from "next-auth/react";
-import { UserRole } from "@prisma/client";
+import { signOut, useSession } from "@/lib/auth-client";
 import { Icon } from "@/components/icon";
 import { useUIStore } from "@/store/ui-store";
 
@@ -45,7 +44,7 @@ export function Navbar() {
   const { theme, setTheme } = useUIStore();
 
   const authReady = status !== "loading";
-  const isAdmin = session?.user?.role === UserRole.ADMIN;
+  const isAdmin = session?.user?.role === "ADMIN";
 
   const authLinks: NavLink[] = [
     { href: "/board", label: "게시판", icon: "fa-solid fa-table-columns" },

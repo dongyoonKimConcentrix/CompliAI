@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { PraiseTargetSelect } from "@/components/praise-target-select";
 import { useUIStore } from "@/store/ui-store";
+import { http } from "@/lib/http";
 
 export default function NewPostPage() {
   const router = useRouter();
@@ -18,20 +19,14 @@ export default function NewPostPage() {
   const [uploading, setUploading] = useState(false);
 
   const mutation = useMutation({
-    mutationFn: async (data: {
+    mutationFn: async (payload: {
       title: string;
       content: string;
       targetUserId: string;
       fileUrl: string | null;
     }) => {
-      const res = await fetch("/api/posts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error || "작성 실패");
-      return json;
+      const { data } = await http.post("/api/posts", payload);
+      return data;
     },
     onMutate: async () => {
       await queryClient.cancelQueries({ queryKey: ["posts"] });
@@ -53,11 +48,14 @@ export default function NewPostPage() {
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
-    const res = await fetch("/api/upload", { method: "POST", body: formData });
-    const json = await res.json();
-    setUploading(false);
-    if (res.ok) setFileUrl(json.url);
-    else openModal(json.error || "업로드 실패");
+    try {
+      const { data: json } = await http.post<{ url: string }>("/api/upload", formData);
+      setFileUrl(json.url);
+    } catch (err) {
+      openModal(err instanceof Error ? err.message : "업로드 실패");
+    } finally {
+      setUploading(false);
+    }
   }
 
   function handleSubmit(e: FormEvent) {

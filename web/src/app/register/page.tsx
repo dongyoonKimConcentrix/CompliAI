@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { ALLOWED_EMAIL_ERROR, isAllowedCompanyEmail } from "@/lib/email-policy";
+import { http } from "@/lib/http";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
@@ -25,23 +26,19 @@ export default function RegisterPage() {
       return;
     }
 
-    const res = await fetch("/api/auth/register", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password, name }),
-    });
-
-    const json = await res.json();
-    setLoading(false);
-
-    if (!res.ok) {
-      setError(json.error);
-      return;
-    }
-
-    setMessage(json.message);
-    if (json.verifyUrl) {
-      setVerifyUrl(json.verifyUrl);
+    try {
+      const { data: json } = await http.post<{ message: string; verifyUrl?: string }>(
+        "/api/auth/register",
+        { email, password, name }
+      );
+      setLoading(false);
+      setMessage(json.message);
+      if (json.verifyUrl) {
+        setVerifyUrl(json.verifyUrl);
+      }
+    } catch (err) {
+      setLoading(false);
+      setError(err instanceof Error ? err.message : "회원가입에 실패했습니다.");
     }
   }
 

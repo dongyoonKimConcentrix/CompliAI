@@ -42,6 +42,7 @@ api/.venv/
 # uploads
 web/public/uploads/*
 !web/public/uploads/.gitkeep
+api/uploads/
 
 # IDE
 .idea/

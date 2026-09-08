@@ -2,10 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
 import { Icon } from "@/components/icon";
 import { getKSTNow } from "@/lib/praise-policy";
 import type { LeaderboardEntry } from "@/lib/praise-policy";
+import { http } from "@/lib/http";
 
 export function MonthlyRankingPreview() {
   const { data: session } = useSession();
@@ -14,9 +15,11 @@ export function MonthlyRankingPreview() {
   const { data } = useQuery({
     queryKey: ["rankings", now.year, now.month],
     queryFn: async () => {
-      const res = await fetch(`/api/rankings/monthly?year=${now.year}&month=${now.month}`);
-      if (!res.ok) return null;
-      return res.json() as Promise<{ leaders: LeaderboardEntry[]; period: { label: string } }>;
+      const { data } = await http.get<{ leaders: LeaderboardEntry[]; period: { label: string } }>(
+        "/api/rankings/monthly",
+        { params: { year: now.year, month: now.month } }
+      );
+      return data;
     },
     enabled: !!session,
   });

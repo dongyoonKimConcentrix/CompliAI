@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { getServerSession } from "next-auth";
 import { Icon } from "@/components/icon";
 import { MonthlyRankingPreview } from "@/components/monthly-ranking-preview";
-import { authOptions } from "@/lib/auth";
+import { getServerSession } from "@/lib/session";
 
 export default async function HomePage() {
-  const session = await getServerSession(authOptions);
+  const session = await getServerSession();
   const startHref = session?.user ? "/board" : "/login";
 
   return (

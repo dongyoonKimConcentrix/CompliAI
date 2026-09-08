@@ -1,9 +1,10 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
 import { Icon } from "@/components/icon";
 import { useUIStore } from "@/store/ui-store";
+import { http } from "@/lib/http";
 
 type PostReportButtonProps = {
   postId: string;
@@ -26,19 +27,22 @@ export function PostReportButton({
   const { data: reportData } = useQuery({
     queryKey: ["report", postId],
     queryFn: async () => {
-      const res = await fetch(`/api/posts/${postId}/report`);
-      if (!res.ok) return { reported: false, count: reportCount };
-      return res.json() as Promise<{ reported: boolean; count: number }>;
+      try {
+        const { data } = await http.get<{ reported: boolean; count: number }>(
+          `/api/posts/${postId}/report`
+        );
+        return data;
+      } catch {
+        return { reported: false, count: reportCount };
+      }
     },
     enabled: !!session && !isOwner,
   });
 
   const reportMutation = useMutation({
     mutationFn: async () => {
-      const res = await fetch(`/api/posts/${postId}/report`, { method: "POST" });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "신고에 실패했습니다.");
-      return json;
+      const { data } = await http.post(`/api/posts/${postId}/report`);
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["report", postId] });

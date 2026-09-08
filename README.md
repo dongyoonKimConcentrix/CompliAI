@@ -14,19 +14,19 @@
 * **Optimization:** Swap Memory 3GB 활성화, PostgreSQL 및 컨테이너 메모리 상한선(Limits) 제한
 
 ### 2. Frontend Layer (Port: 80)
-* **Framework:** Next.js (App Router)
-* **Authentication & Session:** NextAuth.js (JWT 기반 세션 관리, 이메일 및 익명 로그인 지원)
-* **UI & Styling:** [daisyUI](https://daisyui.com/) (Tailwind CSS 기반 컴포넌트 라이브러리로 UI 디자인 및 스타일링)
-* **Data Access (Node.js):** Prisma ORM (PostgreSQL 직접 연결)
-* **Security:** bcrypt (사용자 비밀번호 단방향 해싱 암호화)
-* **State Management:** * **Server State:** **TanStack Query (React Query v5)** 활용 (마이페이지 데이터 캐싱, AI 대기 시간 단축을 위한 낙관적 업데이트, 무한 스크롤 페이징 최적화 담당)
-* **Client UI State:** 초경량 상태 관리 라이브러리 **Zustand** 활용 (모달 팝업 토글, 카드 디자인 테마 제어 담당)
+* **Framework:** Next.js (App Router) — 화면, 로그인 상태, 게시판 UI
+* **Auth state:** FastAPI JWT 쿠키를 `jose`로 검증 (미들웨어·세션)
+* **UI & Styling:** daisyUI + Tailwind CSS
+* **Server State:** TanStack Query v5
+* **Client UI State:** Zustand
 
-### 3. AI Backend Layer (Port: 8000)
-* **Framework:** FastAPI
-* **API Documentation:** Swagger UI 자동 생성 및 명세 제공 (`/docs` 접속)
-* **Data Access (Python):** SQLModel (Pydantic + SQLAlchemy 합본 구조)
-* **AI Engine:** OpenAI API (`gpt-4o-mini` 모델 활용, 구조화된 JSON 데이터 응답 처리)
+### 3. Backend / REST API (Port: 8000)
+* **Framework:** FastAPI (인증, CRUD, 비즈니스 로직, DB 접근)
+* **API Documentation:** Swagger UI (`/docs`)
+* **Data Access:** SQLModel / SQLAlchemy → PostgreSQL
+* **Auth:** JWT (HTTP-only 쿠키 + Bearer)
+* **AI Engine:** OpenAI API (`gpt-4o-mini`)
+
 
 ### 4. Database Layer (Port: 5432 - Internal Only)
 * **DBMS:** PostgreSQL (postgres:15-alpine 경량화 이미지)
@@ -40,9 +40,9 @@
   * 사내 직원 인증을 위한 이메일 중복 검사 및 이메일 인증 기능 (토큰 링크 또는 인증 코드 검증).
   * `bcrypt`를 사용한 비밀번호 단방향 해싱 암호화 저장.
 * **로그인:**
-  * 이메일/비밀번호 기반 로그인 구현 (`NextAuth.js` 가이드 준수).
-  * JWT 기반 토큰 인증 방식을 사용하며, 성공 시 토큰 발급 및 세션 유지 (`SessionProvider` 연동).
-  * 미인증 사용자의 접근을 제한하는 API Guard 및 Middleware 라우트 보호 처리.
+  * 이메일/비밀번호 기반 로그인 (FastAPI JWT).
+  * JWT 기반 토큰 인증. 프론트는 쿠키 세션으로 로그인 상태를 유지합니다.
+  * 미인증 사용자의 접근을 제한하는 FastAPI 가드 및 Next.js Middleware.
 
 ### 2. 칭찬 게시판 (Board) - 필수
 * **목적:** 동료를 칭찬하고 응원하는 글을 작성하는 공간.
@@ -56,9 +56,10 @@
 * **소유권:** 본인이 작성한 댓글만 수정 및 삭제 가능.
 * **기능:** 댓글 작성, 게시글별 댓글 목록 조회, 댓글 삭제.
 
-### 4. 핵심 AI 비즈니스 로직: 부정적 뉘앙스 필터링 (FastAPI 전담) - 필수
+### 4. 핵심 AI 비즈니스 로직: 부정적 뉘앙스 필터링 (FastAPI) - 필수
 * **부정적 뉘앙스 및 공격성 분석 알고리즘 (AI Evaluation):**
-  * 사용자가 게시글이나 댓글을 작성할 때, FastAPI 엔드포인트를 통해 OpenAI API(`gpt-4o-mini`)를 백그라운드 호출합니다.
+  * 게시글/댓글 작성 시 FastAPI가 OpenAI API(`gpt-4o-mini`)로 분석합니다 (`POST /api/analyze`, Swagger `/docs`).
+  * 입력된 텍스트의 **'부정적 뉘앙스 점수(Sarcasm Score: 0~100)', '공격성 유무(Aggression: True/False)'**를 AI가 분석하도록 프롬프트를 설계합니다.
   * 입력된 텍스트의 **'부정적 뉘앙스 점수(Sarcasm Score: 0~100)', '공격성 유무(Aggression: True/False)'**를 AI가 분석하도록 프롬프트를 설계합니다.
   * **필터링 규칙:** 부정적 뉘앙스 점수가 특정 임계치를 넘거나 공격성이 `True`인 경우, 해당 글은 사내 문화를 해치는 글로 간주하여 블라인드 처리되거나 작성자에게 경고를 보냅니다.
   * **UX 최적화:** AI 분석 대기 시간(2~3초) 동안 브라우저가 멈추는 현상을 방지하기 위해 TanStack Query의 **낙관적 업데이트(Optimistic Updates)**를 사용하여 프론트엔드 UI에 칭찬 카드를 즉시 먼저 렌더링합니다. 분석 실패 혹은 필터링 차단 시 자연스럽게 롤백 처리합니다.
@@ -397,7 +398,7 @@ volumes:
 | `NEXTAUTH_URL` | `http://공인IP` (월간 메일 cron) |
 | `CRON_SECRET` | `.env`와 동일 |
 
-**배포 흐름:** `main` push → GitHub에서 `compliai-web/api/migrate` 이미지 빌드·push → VM에서 `git pull` + `scripts/deploy.sh` (pull만, 빌드 없음)
+**배포 흐름:** `main` push → GitHub에서 `compliai-web/api/migrate` 이미지 빌드·push → VM에서 `git pull` + `scripts/deploy.sh` (pull만, 빌드 없음). 브라우저는 Next.js(80)로 UI를 보고, `/api/*`는 FastAPI로 프록시됩니다. Swagger는 `http://공인IP:8000/docs`.
 
 **로컬에서 수동 빌드·push (Mac):**
 

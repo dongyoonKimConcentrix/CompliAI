@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/icon";
+import { http } from "@/lib/http";
 
 type PraiseTarget = {
   id: string;
@@ -29,11 +30,10 @@ export function PraiseTargetSelect({
   const { data, isLoading } = useQuery({
     queryKey: ["praise-targets", query],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (query.trim()) params.set("q", query.trim());
-      const res = await fetch(`/api/users/praise-targets?${params}`);
-      if (!res.ok) throw new Error("회원 목록 조회 실패");
-      return res.json() as Promise<{ users: PraiseTarget[] }>;
+      const { data } = await http.get<{ users: PraiseTarget[] }>("/api/users/praise-targets", {
+        params: query.trim() ? { q: query.trim() } : undefined,
+      });
+      return data;
     },
     enabled: open,
   });

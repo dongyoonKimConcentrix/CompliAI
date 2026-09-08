@@ -8,6 +8,7 @@ RUN npm ci 2>/dev/null || npm install
 
 FROM base AS builder
 WORKDIR /app
+ENV FASTAPI_INTERNAL_URL=http://api:8000
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 RUN npx prisma generate
@@ -23,11 +24,6 @@ RUN adduser --system --uid 1001 nextjs
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-
-# 런타임 업로드용 (docker volume uploads_data → /app/public/uploads)
-RUN mkdir -p public/uploads && chown -R nextjs:nodejs public/uploads public
 
 COPY docker-entrypoint.sh ./
 RUN chmod +x docker-entrypoint.sh && chown nextjs:nodejs docker-entrypoint.sh

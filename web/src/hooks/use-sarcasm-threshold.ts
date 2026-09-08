@@ -2,14 +2,18 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { SARCASM_THRESHOLD } from "@/lib/ai";
+import { http } from "@/lib/http";
 
 export function useSarcasmThreshold() {
   const { data } = useQuery({
     queryKey: ["threshold"],
     queryFn: async () => {
-      const res = await fetch("/api/settings/threshold");
-      if (!res.ok) return { threshold: SARCASM_THRESHOLD };
-      return res.json() as Promise<{ threshold: number }>;
+      try {
+        const { data } = await http.get<{ threshold: number }>("/api/settings/threshold");
+        return data;
+      } catch {
+        return { threshold: SARCASM_THRESHOLD };
+      }
     },
     staleTime: 60_000,
   });

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { PostCard } from "@/components/post-card";
 import { Icon } from "@/components/icon";
+import { http } from "@/lib/http";
 
 type Post = {
   id: string;
@@ -20,12 +21,10 @@ type Post = {
 };
 
 async function fetchPosts({ pageParam, query }: { pageParam?: string; query: string }) {
-  const params = new URLSearchParams();
-  if (pageParam) params.set("cursor", pageParam);
-  if (query) params.set("q", query);
-  const res = await fetch(`/api/posts?${params}`);
-  if (!res.ok) throw new Error("목록 조회 실패");
-  return res.json() as Promise<{ posts: Post[]; nextCursor: string | null }>;
+  const { data } = await http.get<{ posts: Post[]; nextCursor: string | null }>("/api/posts", {
+    params: { cursor: pageParam, q: query || undefined },
+  });
+  return data;
 }
 
 export default function BoardPage() {

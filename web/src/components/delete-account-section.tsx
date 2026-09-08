@@ -1,10 +1,11 @@
 "use client";
 
 import { useMutation } from "@tanstack/react-query";
-import { signOut } from "next-auth/react";
+import { signOut } from "@/lib/auth-client";
 import { FormEvent, useState } from "react";
 import { Icon } from "@/components/icon";
 import { useUIStore } from "@/store/ui-store";
+import { http } from "@/lib/http";
 
 export function DeleteAccountSection() {
   const openModal = useUIStore((s) => s.openModal);
@@ -13,14 +14,8 @@ export function DeleteAccountSection() {
 
   const deleteAccount = useMutation({
     mutationFn: async (body: { password: string }) => {
-      const res = await fetch("/api/profile", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
-      return json;
+      const { data } = await http.delete("/api/profile", { data: body });
+      return data;
     },
     onSuccess: async () => {
       await signOut({ callbackUrl: "/" });

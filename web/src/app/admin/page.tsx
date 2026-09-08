@@ -2,11 +2,12 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import Link from "next/link";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/auth-client";
 import { FormEvent, useEffect, useState } from "react";
 import { Icon } from "@/components/icon";
 import { NegativeNuanceScore } from "@/components/negative-nuance-score";
 import { useUIStore } from "@/store/ui-store";
+import { http } from "@/lib/http";
 
 type ModerationItem = {
   type: "post" | "comment";
@@ -30,18 +31,19 @@ export default function AdminPage() {
   const { data: settings } = useQuery({
     queryKey: ["admin-settings"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/settings");
-      if (!res.ok) throw new Error("설정 조회 실패");
-      return res.json() as Promise<{ threshold: number }>;
+      const { data } = await http.get<{ threshold: number }>("/api/admin/settings");
+      return data;
     },
   });
 
   const { data: queue, isLoading } = useQuery({
     queryKey: ["admin-moderation"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/moderation?status=PENDING");
-      if (!res.ok) throw new Error("대기열 조회 실패");
-      return res.json() as Promise<{ items: ModerationItem[]; pendingCount: number }>;
+      const { data } = await http.get<{ items: ModerationItem[]; pendingCount: number }>(
+        "/api/admin/moderation",
+        { params: { status: "PENDING" } }
+      );
+      return data;
     },
   });
 
@@ -51,14 +53,8 @@ export default function AdminPage() {
 
   const saveSettings = useMutation({
     mutationFn: async (value: number) => {
-      const res = await fetch("/api/admin/settings", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ threshold: value }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
-      return json;
+      const { data } = await http.put("/api/admin/settings", { threshold: value });
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-settings"] });
@@ -78,14 +74,8 @@ export default function AdminPage() {
       id: string;
       action: "approve" | "delete";
     }) => {
-      const res = await fetch("/api/admin/moderation", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, id, action }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
-      return json;
+      const { data } = await http.patch("/api/admin/moderation", { type, id, action });
+      return data;
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin-moderation"] });
@@ -304,22 +294,15 @@ function AdminMembersPanel() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/users");
-      if (!res.ok) throw new Error("회원 목록 조회 실패");
-      return res.json() as Promise<{ users: AdminMember[]; total: number }>;
+      const { data } = await http.get<{ users: AdminMember[]; total: number }>("/api/admin/users");
+      return data;
     },
   });
 
   const deleteUser = useMutation({
     mutationFn: async (userId: string) => {
-      const res = await fetch("/api/admin/users", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error ?? "삭제 실패");
-      return json as { message: string };
+      const { data } = await http.delete<{ message: string }>("/api/admin/users", { data: { userId } });
+      return data;
     },
     onSuccess: (json) => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
@@ -436,9 +419,8 @@ function CurrentMonthLeaderPanel() {
   const { data, isLoading } = useQuery({
     queryKey: ["admin-current-month-leader"],
     queryFn: async () => {
-      const res = await fetch("/api/rankings/monthly");
-      if (!res.ok) throw new Error("월간 랭킹 조회 실패");
-      return res.json() as Promise<CurrentMonthRanking>;
+      const { data } = await http.get<CurrentMonthRanking>("/api/rankings/monthly");
+      return data;
     },
   });
 
@@ -530,22 +512,18 @@ function MonthlyWinnerEmailPanel() {
   const { data: status, isLoading } = useQuery({
     queryKey: ["admin-monthly-winner"],
     queryFn: async () => {
-      const res = await fetch("/api/admin/monthly-winner");
-      if (!res.ok) throw new Error("칭찬왕 메일 상태 조회 실패");
-      return res.json() as Promise<MonthlyWinnerStatus>;
+      const { data } = await http.get<MonthlyWinnerStatus>("/api/admin/monthly-winner");
+      return data;
     },
   });
 
   const sendEmail = useMutation({
     mutationFn: async (action: "test" | "send") => {
-      const res = await fetch("/api/admin/monthly-winner", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action }),
-      });
-      const json = await res.json();
-      if (!res.ok) throw new Error(json.error);
-      return json as { skipped: boolean; reason?: string; recipientCount?: number };
+      const { data } = await http.post<{ skipped: boolean; reason?: string; recipientCount?: number }>(
+        "/api/admin/monthly-winner",
+        { action }
+      );
+      return data;
     },
     onSuccess: (data, action) => {
       if (data.skipped) {

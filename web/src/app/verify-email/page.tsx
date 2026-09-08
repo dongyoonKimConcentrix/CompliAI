@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useState } from "react";
 import { Icon } from "@/components/icon";
+import { http } from "@/lib/http";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -30,23 +31,12 @@ function VerifyEmailContent() {
     setErrorMessage("");
 
     try {
-      const res = await fetch("/api/auth/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token }),
-      });
-      const json = await res.json();
-
-      if (!res.ok) {
-        setStatus("error");
-        setErrorMessage(errorMessages[json.error as string] ?? errorMessages.verify_failed);
-        return;
-      }
-
+      await http.post("/api/auth/verify", { token });
       setStatus("success");
-    } catch {
+    } catch (err) {
+      const code = err instanceof Error ? err.message : "verify_failed";
       setStatus("error");
-      setErrorMessage(errorMessages.verify_failed);
+      setErrorMessage(errorMessages[code] ?? errorMessages.verify_failed);
     }
   }
 
